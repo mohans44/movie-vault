@@ -6,9 +6,29 @@ function getStarType(stars, i) {
   return "empty";
 }
 
+function getRatingPalette(value) {
+  if (value > 3.5) {
+    return {
+      active: "text-cyan-300 fill-cyan-300",
+      badge: "text-cyan-100 bg-cyan-500/25",
+    };
+  }
+  if (value > 2) {
+    return {
+      active: "text-sky-300 fill-sky-300",
+      badge: "text-sky-100 bg-sky-500/25",
+    };
+  }
+  return {
+    active: "text-rose-300 fill-rose-300",
+    badge: "text-rose-100 bg-rose-500/25",
+  };
+}
+
 export default function StarRating({ value, size = 18, showText = true }) {
   const stars = Math.round((Number(value) || 0) * 2) / 2;
   const rating = value ? Number(value).toFixed(1) : "N/A";
+  const palette = getRatingPalette(stars);
 
   return (
     <div className="flex flex-col gap-1">
@@ -20,7 +40,7 @@ export default function StarRating({ value, size = 18, showText = true }) {
               return (
                 <Star
                   key={i}
-                  className="text-yellow-400 fill-yellow-400 drop-shadow-sm"
+                  className={`${palette.active} drop-shadow-sm`}
                   size={size}
                 />
               );
@@ -37,7 +57,7 @@ export default function StarRating({ value, size = 18, showText = true }) {
                   }}
                 >
                   <Star
-                    className="text-yellow-400 fill-yellow-400 drop-shadow-sm"
+                    className={`${palette.active} drop-shadow-sm`}
                     size={size}
                     style={{
                       position: "absolute",
@@ -67,7 +87,9 @@ export default function StarRating({ value, size = 18, showText = true }) {
           })}
         </span>
         {showText && (
-          <span className="text-white font-semibold text-sm bg-black/30 px-2 py-0.5 rounded-full backdrop-blur-sm">
+          <span
+            className={`rounded-full px-2 py-0.5 text-sm font-semibold backdrop-blur-sm ${palette.badge}`}
+          >
             {rating}
           </span>
         )}

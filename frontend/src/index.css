@@ -1,12 +1,87 @@
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-.scrollbar-hide::-webkit-scrollbar {
+:root {
+  --bg: 8 11 20;
+  --bg-soft: 13 20 36;
+  --surface: 26 39 64;
+  --surface-2: 39 58 90;
+  --accent: 103 223 255;
+  --accent-dark: 71 175 212;
+  --primary: 236 247 255;
+  --cta: 115 198 255;
+  --text-main: 245 246 251;
+  --text-soft: 176 191 221;
+  --text-mute: 128 147 183;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: rgb(var(--text-main));
+  font-family: "Sora", system-ui, sans-serif;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(118, 155, 255, 0.14), transparent 36%),
+    radial-gradient(circle at 86% 84%, rgba(86, 201, 255, 0.1), transparent 38%),
+    linear-gradient(165deg, rgb(var(--bg)) 0%, rgb(var(--bg-soft)) 48%, rgb(var(--bg)) 100%);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: rgba(245, 246, 251, 0.24);
+  color: rgb(var(--text-main));
+}
+
+.film-grain {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 0.6px, transparent 0.6px);
+  background-size: 3px 3px;
+  opacity: 0.06;
+}
+
+* {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
   display: none;
 }
 
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translate3d(0, 22px, 0) scale(0.985);
+  transition: opacity 560ms ease, transform 560ms ease;
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-on-scroll {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

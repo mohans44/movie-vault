@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Play, X, Check, Trash2 } from "lucide-react";
+import { Play, X, Check, Trash2, Calendar, Sparkles } from "lucide-react";
 import StarRating from "./StarRating";
 import InteractiveStarRating from "./InteractiveStarRating";
 import { addRating, editRating, deleteRating } from "../utils/api";
@@ -8,9 +8,19 @@ import { addRating, editRating, deleteRating } from "../utils/api";
 function formatDate(date) {
   if (!date) return "";
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
-  const d = new Date(date);
-  if (isNaN(d)) return "";
-  return d.toISOString().split("T")[0];
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "";
+  return parsed.toISOString().split("T")[0];
+}
+
+function getToday() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function getYesterday() {
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  return date.toISOString().split("T")[0];
 }
 
 export default function LogMovieModal({
@@ -27,6 +37,10 @@ export default function LogMovieModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const isEditing = !!existingRating;
+  const communityRating = Math.max(
+    0,
+    Math.min(5, Number(movie?.rating || movie?.vote_average || 0) / 2)
+  );
 
   useEffect(() => {
     setRating(existingRating?.rating || 0);
@@ -34,28 +48,42 @@ export default function LogMovieModal({
     setWatchedDate(
       existingRating?.watched_date
         ? formatDate(existingRating.watched_date)
-        : new Date().toISOString().split("T")[0]
+        : getToday()
     );
     setError("");
   }, [existingRating, isOpen, movie?.id]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     if (!user?.username || rating === 0) {
       setError("Please select a rating");
       return;
     }
+
     setIsSubmitting(true);
     setError("");
+
     try {
-      const fn = isEditing ? editRating : addRating;
-      await fn(
-        user.username,
-        movie.id,
-        rating,
-        review,
-        formatDate(watchedDate)
-      );
+      const request = isEditing ? editRating : addRating;
+      await request(user.username, movie.id, rating, review, formatDate(watchedDate));
       onSuccess(isEditing ? "edit" : "add", {
         rating,
         review,
@@ -85,122 +113,159 @@ export default function LogMovieModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-surface rounded-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-surface/30 shadow-2xl">
-        <div className="flex items-center justify-between p-6 border-b border-surface/30">
-          <h2 className="text-xl font-bold text-text-main flex items-center gap-2">
-            <Play size={20} className="text-accent" />
-            {isEditing ? "Edit Rating" : "Log Movie"}
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm">
+      <div className="flex min-h-full items-center justify-center p-4 md:items-start md:p-6 md:pt-24">
+      <div className="glass-panel w-full max-w-xl max-h-[92vh] overflow-hidden rounded-3xl shadow-card">
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 md:px-6">
+          <h2 className="flex items-center gap-2 text-xl font-bold text-text-main">
+            <Play size={18} className="text-accent" />
+            {isEditing ? "Edit your log" : "Log this movie"}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-surface/50 rounded-lg transition-colors"
+            className="rounded-lg border border-white/10 p-2 text-text-soft transition hover:bg-white/10 hover:text-text-main"
+            aria-label="Close"
           >
-            <X size={20} className="text-text-soft" />
+            <X size={18} />
           </button>
         </div>
-        <div className="p-6 border-b border-surface/30">
-          <div className="flex gap-4">
+
+        <div className="border-b border-white/10 px-5 py-4 md:px-6">
+          <div className="flex gap-4 rounded-2xl border border-white/10 bg-background/30 p-3">
             <img
-              src={movie.poster_path || "/assets/placeholder.jpg"}
+              src={movie.poster_path || "/no-image.svg"}
               alt={movie.title}
-              className="w-16 h-24 object-cover rounded-lg border border-surface/30"
+              className="h-24 w-16 rounded-lg object-cover"
             />
-            <div className="flex-1">
-              <h3 className="font-semibold text-text-main text-lg leading-tight">
+            <div className="min-w-0 flex-1">
+              <h3 className="line-clamp-2 text-base font-semibold text-text-main md:text-lg">
                 {movie.title}
               </h3>
-              <p className="text-text-soft text-sm mt-1">
-                {movie.release_date?.slice(0, 4)} • {movie.director}
+              <p className="mt-1 text-sm text-text-soft">
+                {movie.release_date?.slice(0, 4) || "Unknown"}
+                {movie.director ? ` • ${movie.director}` : ""}
               </p>
-              <div className="mt-2">
-                <StarRating value={movie.rating} size={14} showText={false} />
+              <div className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs text-text-soft">
+                <Sparkles size={12} className="text-accent" />
+                Community rating
+                <StarRating value={communityRating} size={12} showText={false} />
+                <span className="rounded-full bg-black/25 px-2 py-0.5 font-semibold text-text-main">
+                  {communityRating.toFixed(1)}/5
+                </span>
               </div>
             </div>
           </div>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          <div>
-            <label className="block text-text-main font-medium mb-3">
-              Your Rating *
-            </label>
-            <div className="flex items-center justify-center py-2">
-              <InteractiveStarRating
-                rating={rating}
-                onRatingChange={setRating}
-                size={32}
+
+        <form onSubmit={handleSubmit} className="max-h-[62vh] overflow-y-auto px-5 py-5 md:px-6">
+          <div className="space-y-5">
+            <section className="rounded-2xl border border-white/10 bg-background/25 p-4">
+              <label className="mb-2 block text-sm font-semibold text-text-main">
+                Your rating <span className="text-red-300">*</span>
+              </label>
+              <div className="flex items-center justify-center py-2">
+                <InteractiveStarRating
+                  rating={rating}
+                  onRatingChange={setRating}
+                  size={34}
+                />
+              </div>
+              <p className="mt-2 text-center text-sm text-text-soft">
+                {rating > 0 ? `${rating}/5 stars` : "Tap a star to rate"}
+              </p>
+            </section>
+
+            <section className="rounded-2xl border border-white/10 bg-background/25 p-4">
+              <label className="mb-2 block text-sm font-semibold text-text-main">
+                Watched date
+              </label>
+              <div className="mb-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setWatchedDate(getToday())}
+                  className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-text-main hover:bg-white/10"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWatchedDate(getYesterday())}
+                  className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-text-main hover:bg-white/10"
+                >
+                  Yesterday
+                </button>
+              </div>
+              <div className="relative">
+                <Calendar
+                  size={15}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-soft"
+                />
+                <input
+                  type="date"
+                  value={watchedDate}
+                  onChange={(event) => setWatchedDate(event.target.value)}
+                  className="w-full rounded-xl border border-white/15 bg-background/35 py-2.5 pl-9 pr-3 text-sm text-text-main outline-none focus:border-primary/60"
+                />
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-white/10 bg-background/25 p-4">
+              <label className="mb-2 block text-sm font-semibold text-text-main">
+                Review (optional)
+              </label>
+              <textarea
+                value={review}
+                onChange={(event) => setReview(event.target.value)}
+                placeholder="What worked, what didn’t, and how did it feel?"
+                className="h-36 w-full resize-none rounded-xl border border-white/15 bg-background/35 p-3 text-sm leading-relaxed text-text-main placeholder:text-text-soft/80 outline-none focus:border-primary/60"
+                maxLength={500}
               />
-            </div>
-            <p className="text-center text-text-soft text-sm mt-2">
-              {rating > 0 ? `${rating}/5 stars` : "Click to rate"}
-            </p>
+              <p className="mt-1 text-right text-xs text-text-soft">{review.length}/500</p>
+            </section>
+
+            {error && (
+              <div className="rounded-xl border border-red-500/35 bg-red-500/12 px-3 py-2 text-sm text-red-200">
+                {error}
+              </div>
+            )}
           </div>
-          <div>
-            <label className="block text-text-main font-medium mb-3">
-              Watched Date
-            </label>
-            <input
-              type="date"
-              value={watchedDate}
-              onChange={(e) => setWatchedDate(e.target.value)}
-              className="w-full p-3 bg-background border border-surface/30 rounded-lg text-text-main focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 transition-colors"
-            />
-          </div>
-          <div>
-            <label className="block text-text-main font-medium mb-3">
-              Review (Optional)
-            </label>
-            <textarea
-              value={review}
-              onChange={(e) => setReview(e.target.value)}
-              placeholder="What did you think about this movie?"
-              className="w-full h-32 p-3 bg-background border border-surface/30 rounded-lg text-text-main placeholder-text-soft resize-none focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 transition-colors"
-              maxLength={500}
-            />
-            <p className="text-right text-text-soft text-xs mt-1">
-              {review.length}/500
-            </p>
-          </div>
-          {error && (
-            <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <p className="text-red-400 text-sm">{error}</p>
-            </div>
-          )}
-          <div className="flex gap-3">
+
+          <div className="sticky bottom-0 mt-5 flex flex-wrap gap-2 border-t border-white/10 bg-[rgba(20,24,36,0.9)] pt-4 backdrop-blur-lg">
             {isEditing && (
               <button
                 type="button"
                 onClick={handleDelete}
                 disabled={isSubmitting}
-                className="flex items-center gap-2 px-4 py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-lg font-medium transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl border border-red-400/35 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-200 transition hover:bg-red-500/18 disabled:opacity-50"
               >
-                <Trash2 size={16} />
+                <Trash2 size={15} />
                 Delete
               </button>
             )}
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 bg-surface/50 hover:bg-surface/70 text-text-soft border border-surface/30 rounded-lg font-medium transition-colors"
+              className="flex-1 rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm font-semibold text-text-soft transition hover:bg-white/10 hover:text-text-main"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting || rating === 0}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-accent hover:bg-accent/90 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+              className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-primary/45 bg-primary/85 px-4 py-2.5 text-sm font-semibold text-background transition hover:bg-primary disabled:opacity-50"
             >
               {isSubmitting ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-background/30 border-t-background" />
               ) : (
                 <>
-                  <Check size={16} />
-                  {isEditing ? "Update" : "Log Movie"}
+                  <Check size={15} />
+                  {isEditing ? "Save Changes" : "Log Movie"}
                 </>
               )}
             </button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );

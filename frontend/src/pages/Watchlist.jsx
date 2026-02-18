@@ -11,32 +11,34 @@ export default function Watchlist() {
 
   useEffect(() => {
     if (!user) return;
+
     setMovies([]);
     setLoading(true);
     getWatchlist(user.username)
-      .then((movieIds) =>
-        Promise.all(movieIds.map((id) => fetchMovieDetails(id)))
-      )
+      .then((movieIds) => Promise.all(movieIds.map((id) => fetchMovieDetails(id))))
       .then((results) => setMovies(results.filter(Boolean)))
       .finally(() => setLoading(false));
   }, [user]);
 
-  if (!user)
+  if (!user) {
     return (
-      <div className="p-8 text-gray-400">
+      <div className="px-4 py-12 text-center text-text-soft">
         Please log in to see your watchlist.
       </div>
     );
+  }
 
   return (
     <MovieGridSection
       loading={loading}
       movies={movies}
-      icon={<Bookmark className="text-accent mb-2" size={40} />}
+      icon={<Bookmark size={18} />}
       title="Your Watchlist"
       loadingText="Loading your watchlist..."
-      emptyText="Your watchlist is empty."
-      emptySub="Add movies you want to see next!"
+      emptyText="Your watchlist is empty"
+      emptySub="Add movies you want to see next."
+      mobileDense={true}
+      maxWidthClass="max-w-7xl"
     />
   );
 }

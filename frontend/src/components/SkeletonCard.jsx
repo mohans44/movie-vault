@@ -1,9 +1,11 @@
 export default function SkeletonCard() {
   return (
-    <div className="bg-surface rounded-xl shadow-card animate-pulse p-2 flex flex-col gap-2 w-full h-full">
-      <div className="h-32 md:h-48 xl:h-64 w-full bg-gray-800 rounded" />
-      <div className="h-4 bg-gray-700 rounded w-3/4 mt-2" />
-      <div className="h-3 bg-gray-700 rounded w-1/2" />
+    <div className="relative aspect-[2/3] h-full overflow-hidden rounded-2xl border border-white/10 bg-surface/60 shadow-card">
+      <div className="absolute inset-0 bg-gradient-to-r from-white/5 via-white/10 to-white/5 bg-[length:250%_100%] animate-shimmer" />
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent p-3">
+        <div className="h-4 w-4/5 rounded bg-white/15" />
+        <div className="mt-2 h-3 w-1/2 rounded bg-white/10" />
+      </div>
     </div>
   );
 }

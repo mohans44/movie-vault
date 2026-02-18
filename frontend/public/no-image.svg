@@ -1,0 +1,15 @@
+<svg width="600" height="900" viewBox="0 0 600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="No image found">
+  <rect width="600" height="900" fill="#161B2A"/>
+  <rect x="36" y="36" width="528" height="828" rx="28" fill="#20273A" stroke="#3C4561" stroke-width="4"/>
+  <g opacity="0.75">
+    <circle cx="300" cy="360" r="88" fill="#2D3650"/>
+    <path d="M238 420L274 372L316 412L346 382L392 444H208L238 420Z" fill="#8F9AB7"/>
+    <circle cx="334" cy="334" r="18" fill="#8F9AB7"/>
+  </g>
+  <text x="300" y="540" text-anchor="middle" fill="#E9EDF8" font-family="Arial, sans-serif" font-size="36" font-weight="700">
+    No Image Found
+  </text>
+  <text x="300" y="586" text-anchor="middle" fill="#A8B1C8" font-family="Arial, sans-serif" font-size="22">
+    Poster unavailable
+  </text>
+</svg>

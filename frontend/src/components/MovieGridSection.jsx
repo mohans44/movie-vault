@@ -1,4 +1,5 @@
 import MovieCard from "./MovieCard";
+import SkeletonCard from "./SkeletonCard";
 
 export function MovieGridSection({
   loading,
@@ -9,41 +10,54 @@ export function MovieGridSection({
   emptyText,
   emptySub,
   gridKey = "id",
+  mobileDense = false,
+  maxWidthClass = "max-w-6xl",
 }) {
+  const countText =
+    title === "Watched Movies"
+      ? `You have watched ${movies.length} movie${movies.length !== 1 ? "s" : ""}`
+      : `You saved ${movies.length} movie${movies.length !== 1 ? "s" : ""} for later`;
+
   return (
-    <div className="min-h-screen bg-background text-text-main flex flex-col">
-      <div className="w-full bg-surface/90 py-8 px-4 flex flex-col items-center justify-center shadow-md mb-8">
-        {icon}
-        <h1 className="text-3xl font-extrabold font-display mb-2">{title}</h1>
-        <div className="text-accent text-lg font-bold">
-          {loading
-            ? loadingText
-            : movies.length === 0
-            ? emptyText
-            : `You have ${movies.length} movie${movies.length > 1 ? "s" : ""}${
-                title === "Watched Movies" ? " watched!" : " to watch!"
-              }`}
-        </div>
-        <div className="text-text-soft text-sm mt-1">
-          {movies.length > 0 &&
-            (title === "Watched Movies"
-              ? "Keep logging your screenings and grow your vault!"
-              : "Ready for a movie night?")}
-        </div>
-      </div>
-      <main className="flex-1 container mx-auto px-3 md:px-4 pb-8">
-        {loading ? (
-          <SkeletonRow />
-        ) : movies.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16">
+    <div className="min-h-screen text-text-main">
+      <header className={`mx-auto mb-3 mt-2 w-full px-2.5 sm:px-4 md:mb-6 md:mt-4 lg:px-6 ${maxWidthClass}`}>
+        <div
+          className={`glass-panel overflow-hidden rounded-3xl border border-white/15 shadow-card ${
+            mobileDense ? "p-3.5 sm:p-5 md:p-7" : "p-4 md:p-8"
+          }`}
+        >
+          <div className="mb-2 inline-flex h-9 w-9 items-center justify-center rounded-2xl border border-accent/30 bg-accent/10 text-accent sm:h-10 sm:w-10 md:h-12 md:w-12">
             {icon}
-            <div className="text-text-soft text-lg font-semibold mb-2">
-              {emptyText}
-            </div>
-            <div className="text-text-soft text-sm">{emptySub}</div>
+          </div>
+          <h1
+            className={`font-display font-bold tracking-tight ${
+              mobileDense ? "text-lg sm:text-xl md:text-4xl" : "text-xl md:text-4xl"
+            }`}
+          >
+            {title}
+          </h1>
+          <p className={`mt-1.5 text-text-soft ${mobileDense ? "text-[11px] sm:text-xs md:text-base" : "text-xs md:text-base"}`}>
+            {loading ? loadingText : movies.length === 0 ? emptyText : countText}
+          </p>
+        </div>
+      </header>
+
+      <main className={`mx-auto w-full flex-1 px-2.5 pb-8 sm:px-4 lg:px-6 ${maxWidthClass}`}>
+        {loading ? (
+          <SkeletonRow mobileDense={mobileDense} />
+        ) : movies.length === 0 ? (
+          <div className="rounded-3xl border border-white/10 bg-surface/45 py-16 text-center shadow-soft">
+            <p className="text-lg font-semibold text-text-main">{emptyText}</p>
+            <p className="mt-2 text-sm text-text-soft">{emptySub}</p>
           </div>
         ) : (
-          <div className="grid gap-6 grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div
+            className={`grid ${
+              mobileDense
+                ? "grid-cols-3 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+                : "grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+            }`}
+          >
             {movies.map((movie) =>
               movie ? <MovieCard key={movie[gridKey]} movie={movie} /> : null
             )}
@@ -54,18 +68,17 @@ export function MovieGridSection({
   );
 }
 
-function SkeletonRow() {
+function SkeletonRow({ mobileDense = false }) {
   return (
-    <div className="grid gap-6 grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div
-          key={i}
-          className="bg-surface rounded-xl shadow-card animate-pulse p-2 flex flex-col gap-2 w-full"
-        >
-          <div className="aspect-[2/3] w-full bg-gray-800 rounded" />
-          <div className="h-4 bg-gray-700 rounded w-3/4 mt-2" />
-          <div className="h-3 bg-gray-700 rounded w-1/2" />
-        </div>
+    <div
+      className={`grid ${
+        mobileDense
+          ? "grid-cols-3 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+          : "grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5"
+      }`}
+    >
+      {Array.from({ length: 10 }).map((_, index) => (
+        <SkeletonCard key={index} />
       ))}
     </div>
   );

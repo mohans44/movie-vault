@@ -11,19 +11,23 @@ import WatchedMovies from "./pages/WatchedMovies";
 import Watchlist from "./pages/Watchlist";
 import AuthForm from "./pages/AuthForm";
 import MovieDetails from "./pages/MovieDetails";
+import PersonDetails from "./pages/PersonDetails";
 
 export default function App() {
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen flex flex-col">
+        <div className="relative min-h-screen flex flex-col text-text-main">
+          <div className="pointer-events-none fixed inset-0 cinematic-grid opacity-20" />
+          <div className="pointer-events-none fixed inset-0 film-grain" />
           <ScrollToTop />
           <Navbar />
-          <main className="flex-1">
+          <main className="relative z-10 flex-1">
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<AuthForm />} />
               <Route path="/movies/:id" element={<MovieDetails />} />
+              <Route path="/person/:id" element={<PersonDetails />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/search" element={<SearchResults />} />
               <Route path="/watched-movies" element={<WatchedMovies />} />
@@ -31,7 +35,7 @@ export default function App() {
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
-          <Footer />
+          <Footer className="relative z-10" />
         </div>
       </Router>
     </AuthProvider>

@@ -1,4 +1,5 @@
 import axios from "axios";
+import bcrypt from "bcrypt";
 import User from "../models/user.model.js";
 
 const getUser = async (username) => User.findOne({ username });
@@ -184,5 +185,101 @@ export const getRecommendedMovies = async (req, res) => {
     } catch {
       return res.status(200).json({ recommendations: [] });
     }
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user?.user_id;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    const {
+      name,
+      username,
+      currentPassword,
+      newPassword,
+      confirmNewPassword,
+    } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const updates = {};
+
+    if (typeof name === "string") {
+      const normalizedName = name.trim();
+      if (!normalizedName) {
+        return res.status(400).json({ error: "Name cannot be empty" });
+      }
+      updates.name = normalizedName;
+    }
+
+    if (typeof username === "string") {
+      const normalizedUsername = username.trim();
+      if (!normalizedUsername) {
+        return res.status(400).json({ error: "Username cannot be empty" });
+      }
+
+      if (normalizedUsername !== user.username) {
+        const existingUser = await User.findOne({ username: normalizedUsername });
+        if (existingUser) {
+          return res.status(409).json({ error: "Username already exists" });
+        }
+      }
+      updates.username = normalizedUsername;
+    }
+
+    const wantsPasswordUpdate =
+      currentPassword || newPassword || confirmNewPassword;
+
+    if (wantsPasswordUpdate) {
+      if (!currentPassword || !newPassword || !confirmNewPassword) {
+        return res.status(400).json({
+          error:
+            "To change password, provide current password, new password, and confirmation",
+        });
+      }
+      if (newPassword !== confirmNewPassword) {
+        return res.status(400).json({ error: "New passwords do not match" });
+      }
+      if (newPassword.length < 6) {
+        return res
+          .status(400)
+          .json({ error: "New password must be at least 6 characters" });
+      }
+
+      const isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.password
+      );
+      if (!isCurrentPasswordValid) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      updates.password = await bcrypt.hash(newPassword, 10);
+    }
+
+    if (!Object.keys(updates).length) {
+      return res.status(400).json({ error: "No profile changes submitted" });
+    }
+
+    Object.assign(user, updates);
+    await user.save();
+
+    return res.status(200).json({
+      message: "Profile updated successfully",
+      user: {
+        name: user.name,
+        username: user.username,
+        logged: user.logged,
+        watchlist: user.watchlist,
+        joined: user.joined,
+      },
+    });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({ error: "Username already exists" });
+    }
+    return res.status(500).json({ error: "Failed to update profile" });
   }
 };

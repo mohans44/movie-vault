@@ -11,32 +11,36 @@ export default function WatchedMovies() {
 
   useEffect(() => {
     if (!user) return;
+
     setMovies([]);
     setLoading(true);
     getLoggedMovies(user.username)
       .then((movieIds) =>
-        Promise.all(movieIds.map((id) => fetchMovieDetails(id)))
+        Promise.all([...movieIds].reverse().map((id) => fetchMovieDetails(id)))
       )
       .then((results) => setMovies(results.filter(Boolean)))
       .finally(() => setLoading(false));
   }, [user]);
 
-  if (!user)
+  if (!user) {
     return (
-      <div className="p-8 text-gray-400">
+      <div className="px-4 py-12 text-center text-text-soft">
         Please log in to see your watched movies.
       </div>
     );
+  }
 
   return (
     <MovieGridSection
       loading={loading}
       movies={movies}
-      icon={<Popcorn className="text-accent mb-2" size={40} />}
+      icon={<Popcorn size={18} />}
       title="Watched Movies"
       loadingText="Counting your screenings..."
-      emptyText="No movies watched yet."
-      emptySub="Start logging your screenings!"
+      emptyText="No movies watched yet"
+      emptySub="Start logging your screenings."
+      mobileDense={true}
+      maxWidthClass="max-w-7xl"
     />
   );
 }

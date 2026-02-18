@@ -1,20 +1,20 @@
 import tmdbLogo from "../assets/tmdbLogo.svg";
 
-export default function Footer() {
+export default function Footer({ className = "" }) {
   return (
-    <footer className="bg-background text-gray-500 text-center py-6 border-t border-surface flex flex-col items-center gap-2">
-      <div className="flex items-center justify-center gap-2 text-xs">
-        This product uses the TMDB API but is not endorsed or certified by TMDB
-        <img
-          src={tmdbLogo}
-          alt="TMDB Logo"
-          className="inline-block h-5 align-middle"
-          style={{ marginLeft: 4 }}
-        />
-      </div>
-      <div className="text-sm mt-1">
-        &copy; {new Date().getFullYear()} MovieVault &mdash; Your Personalized
-        Movie Journal
+    <footer
+      className={`border-t border-white/10 bg-background/35 px-4 py-4 backdrop-blur-xl ${className}`}
+    >
+      <div className="mx-auto flex max-w-7xl items-center justify-center gap-2 text-[11px] text-text-soft md:text-xs">
+        <span>&copy; {new Date().getFullYear()} Flick Deck</span>
+        <span className="text-text-mute">•</span>
+        <span className="md:hidden">TMDB</span>
+        <span className="hidden md:inline">Powered by TMDB</span>
+        <img src={tmdbLogo} alt="TMDB Logo" className="h-4 w-auto opacity-85" />
+        <span className="hidden text-text-mute md:inline">•</span>
+        <span className="hidden md:inline">
+          This product uses the TMDB API but is not endorsed or certified by TMDB.
+        </span>
       </div>
     </footer>
   );

@@ -1,47 +1,53 @@
-# Movie Vault
+# Flick Deck
 
-Movie Vault is a full-stack movie management and discovery platform with a clean, modular architecture:
+Flick Deck is a full-stack movie discovery and tracking app.
 
-- **Frontend**: Built with React and Material UI, providing a responsive and user-friendly interface. Features include user authentication (JWT), movie search and filtering, personal watchlists, diary, and profile management.
-- **Backend**: Powered by Node.js, Express, and MongoDB, offering secure user management, movie catalog storage, and RESTful APIs for all core features.
+## Stack
+- Frontend: React + Vite + Tailwind
+- Backend: Node.js + Express + MongoDB + JWT auth
+- Data: TMDB proxy + user-specific watchlist/log/reviews
 
-![Demo](assets/demo.gif)
+## Prerequisites
+- Node.js 18+
+- MongoDB running locally or remotely
+- TMDB API key
 
-## Getting Started
-1.	Clone the repository:
-   ```
-   git clone https://github.com/mohanseetha/movie-vault.git
-   ```
-
-### Backend Setup
-1.	Navigate to the backend directory:
-```
-cd movie-vault/backend
-```
-2.	Configure your MongoDB connection and JWT secret in the ‎⁠.env⁠ file (see ‎⁠backend/README.md⁠ for details).
-3.	Install dependencies:
-```
+## Backend
+```bash
+cd backend
 npm install
-```
-4.	Start the backend server:
-```
-nodemon server
+cp .env.example .env   # create if missing; see values below
+npm run dev            # or npm start
 ```
 
-### Frontend Setup
-1.	Navigate to the frontend directory:
+Required backend env values (`backend/.env`):
+```env
+PORT=8000
+MONGO_URI=mongodb://127.0.0.1:27017/flickdeck
+SECRET_KEY=replace-with-a-strong-secret
+TMDB_API_KEY=your_tmdb_api_key
 ```
-cd movie-vault/frontend
-```
-2.	Install dependencies:
-```
+
+## Frontend
+```bash
+cd frontend
 npm install
+cp .env.example .env   # optional; defaults to localhost backend
+npm run dev
 ```
 
-3.	Set your backend API URL in a ‎⁠.env⁠ file (e.g., ‎⁠VITE_BASE_URL=http://localhost:8000).
-4.	Start the frontend development server:
-```
-npm start
+Frontend env (`frontend/.env`):
+```env
+VITE_BASE_URL=http://localhost:8000
 ```
 
-For full setup instructions and feature details, refer to the individual ‎⁠README.md⁠ files in the ‎⁠backend⁠ and ‎⁠frontend⁠ folders.
+## Production Build
+```bash
+cd frontend
+npm run build
+```
+
+## Deploy Notes
+- Set the same `VITE_BASE_URL` to your deployed backend URL.
+- Set backend env vars (`MONGO_URI`, `SECRET_KEY`, `TMDB_API_KEY`) in your host.
+- Ensure CORS origin allows your frontend domain.

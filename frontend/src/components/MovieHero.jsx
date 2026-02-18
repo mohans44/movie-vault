@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Calendar, Clock, Check, Edit3 } from "lucide-react";
 import StarRating from "./StarRating";
 import { MovieActions } from "./MovieActions";
@@ -7,7 +6,7 @@ import MetricBadge from "./MetricBadge";
 function formatWatchedDate(dateString) {
   if (!dateString) return "";
   const date = new Date(dateString);
-  if (isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleDateString(undefined, {
     year: "numeric",
     month: "short",
@@ -25,145 +24,108 @@ export function MovieHero({
   onShare,
   watchlistLoading,
   shareSuccess,
+  watchlistFeedback,
 }) {
-  const [imageLoaded, setImageLoaded] = useState(false);
-
-  const genreChips = (movie.genres || []).map((g) => (
+  const genreChips = (movie.genres || []).map((genre) => (
     <span
-      key={g.id || g.name}
-      className="bg-gradient-to-r from-accent/20 to-accent/10 text-accent px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm border border-accent/30 hover:bg-accent/20 transition-colors duration-200"
+      key={genre.id || genre.name}
+      className="rounded-full border border-accent/25 bg-accent/10 px-3 py-1.5 text-xs font-medium text-accent"
     >
-      {g.name}
+      {genre.name}
     </span>
   ));
 
   return (
-    <div className="relative w-full min-h-[100vh] flex items-center">
-      {movie.backdrop_path && (
-        <>
-          <div
-            className={`absolute inset-0 z-0 transition-opacity duration-700 ${
-              imageLoaded ? "opacity-60" : "opacity-0"
-            }`}
-            style={{
-              backgroundImage: `url(${movie.backdrop_path})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              backgroundAttachment: "fixed",
-            }}
-          />
-          <img
-            src={movie.backdrop_path}
-            alt=""
-            className="hidden"
-            onLoad={() => setImageLoaded(true)}
-          />
-        </>
-      )}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40 z-10" />
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent z-10" />
-
-      <div className="relative z-20 w-full max-w-7xl mx-auto px-4 md:px-8 py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
-          <div className="lg:col-span-4 flex justify-center lg:justify-start">
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-transparent rounded-2xl blur-xl transform group-hover:scale-105 transition-transform duration-300"></div>
+    <div className="relative w-full pt-5 pb-2 sm:py-4 md:py-10">
+      <div className="mx-auto grid w-full max-w-7xl grid-cols-[140px_1fr] items-stretch gap-3 px-2.5 sm:px-6 lg:min-h-[540px] lg:grid-cols-12 lg:gap-10">
+        <div className="lg:col-span-4 flex justify-start lg:h-full lg:justify-start">
+          <div className="w-full max-w-[140px] sm:max-w-[280px] lg:h-full lg:max-w-[320px]">
+            <div className="relative group lg:h-full">
+              <div className="absolute inset-0 -z-10 rounded-3xl bg-accent/15 blur-xl transition-transform duration-300 group-hover:scale-105" />
               <img
-                src={movie.poster_path || "/assets/placeholder.jpg"}
+                src={movie.poster_path || "/no-image.svg"}
                 alt={movie.title}
-                className="relative rounded-2xl shadow-2xl object-cover border border-white/10 aspect-[2/3] w-72 max-w-full transform group-hover:scale-105 transition-transform duration-300"
+                className="h-[220px] w-full rounded-2xl border border-white/15 object-cover shadow-card sm:h-full sm:min-h-[400px] sm:rounded-3xl lg:min-h-0"
               />
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               {isLogged && (
-                <div className="absolute top-4 right-4 bg-accent/90 backdrop-blur-sm rounded-full p-2">
-                  <Check size={16} className="text-white" />
+                <div className="absolute right-2 top-2 rounded-full border border-accent/35 bg-accent/90 p-1.5 text-text-main sm:right-4 sm:top-4 sm:p-2">
+                  <Check size={16} />
                 </div>
               )}
             </div>
           </div>
+        </div>
 
-          <div className="lg:col-span-8 space-y-6">
-            <div className="space-y-2">
-              <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight bg-gradient-to-r from-white to-white/80 bg-clip-text">
-                {movie.title}
-              </h1>
-              {movie.director && (
-                <p className="text-accent text-lg font-medium">
-                  Directed by {movie.director}
-                </p>
-              )}
-              {movie.tagline && movie.tagline.trim() && (
-                <p className="text-white/80 text-xl italic font-light">
-                  "{movie.tagline}"
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-4">
-              <MetricBadge
-                icon={Calendar}
-                value={movie.release_date?.slice(0, 4) || "N/A"}
-                label="Year"
-              />
-              <div className="bg-black/30 backdrop-blur-md px-3 py-2 rounded-xl border border-white/10">
-                <StarRating
-                  value={movie.rating / 2 || 0}
-                  size={16}
-                  showText={true}
-                />
-              </div>
-              {movie.runtime && (
-                <MetricBadge
-                  icon={Clock}
-                  value={`${Math.floor(movie.runtime / 60)}h ${
-                    movie.runtime % 60
-                  }m`}
-                  label="Runtime"
-                />
-              )}
-            </div>
-
-            {isLogged && existingRating && (
-              <div className="bg-accent/10 backdrop-blur-md px-4 py-3 rounded-xl border border-accent/30">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-accent font-medium text-sm">
-                      Your Rating
-                    </p>
-                    <StarRating value={existingRating.rating} size={16} />
-                    {formatWatchedDate(existingRating.watched_date) && (
-                      <p className="text-white/70 text-xs mt-1">
-                        Watched on{" "}
-                        {formatWatchedDate(existingRating.watched_date)}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={onLogMovie}
-                    className="p-2 hover:bg-accent/20 rounded-lg transition-colors"
-                  >
-                    <Edit3 size={16} className="text-accent" />
-                  </button>
-                </div>
-                {existingRating.review && (
-                  <p className="text-white/80 text-sm mt-2 italic">
-                    "{existingRating.review}"
-                  </p>
-                )}
-              </div>
-            )}
-
-            {genreChips.length > 0 && (
-              <div className="flex flex-wrap gap-2">{genreChips}</div>
-            )}
-
-            <div className="space-y-4">
-              <h3 className="text-xl font-semibold text-white">Overview</h3>
-              <p className="text-white/90 text-lg leading-relaxed max-w-3xl">
-                {movie.overview || "No overview available."}
+        <div className="lg:col-span-8 flex min-h-[220px] flex-col space-y-2 rounded-2xl border border-white/10 bg-black/20 p-2.5 backdrop-blur-md sm:h-full sm:space-y-4 sm:rounded-3xl sm:p-3.5 md:p-7 lg:min-h-[540px]">
+          <div className="space-y-1">
+            <h1 className="line-clamp-2 font-display text-base font-bold leading-tight text-text-main sm:text-3xl md:text-6xl">
+              {movie.title}
+            </h1>
+            {movie.director && (
+              <p className="text-[10px] font-medium text-accent sm:text-sm md:text-lg">
+                Directed by {movie.director}
               </p>
-            </div>
+            )}
+            {movie.tagline && movie.tagline.trim() && (
+              <p className="line-clamp-1 text-[10px] italic text-text-soft sm:text-sm md:text-xl">
+                "{movie.tagline}"
+              </p>
+            )}
+          </div>
 
+          <div className="flex-1 space-y-1">
+            <h3 className="text-xs font-semibold text-text-main sm:text-sm md:text-xl">Overview</h3>
+            <p className="line-clamp-5 max-w-3xl text-[10px] leading-relaxed text-text-main/90 sm:text-[12px] md:text-lg">
+              {movie.overview || "No overview available."}
+            </p>
+          </div>
+
+          <div className="hidden flex-wrap gap-1.5 sm:flex sm:gap-2">
+            <MetricBadge
+              icon={Calendar}
+              value={movie.release_date?.slice(0, 4) || "N/A"}
+              label="Year"
+            />
+            <div className="rounded-xl border border-white/10 bg-black/25 px-2.5 py-1.5 backdrop-blur-sm sm:px-3 sm:py-2">
+              <StarRating value={movie.rating / 2 || 0} size={16} showText={true} />
+            </div>
+            {movie.runtime && (
+              <MetricBadge
+                icon={Clock}
+                value={`${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`}
+                label="Runtime"
+              />
+            )}
+          </div>
+
+          {isLogged && existingRating && (
+            <div className="hidden rounded-xl border border-accent/30 bg-accent/10 px-2 py-2 backdrop-blur-sm sm:block sm:rounded-2xl sm:px-4 sm:py-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-medium text-accent md:text-sm">Your Rating</p>
+                  <StarRating value={existingRating.rating} size={16} />
+                  {formatWatchedDate(existingRating.watched_date) && (
+                    <p className="mt-1 text-[10px] text-text-soft md:text-xs">
+                      Watched on {formatWatchedDate(existingRating.watched_date)}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={onLogMovie}
+                  className="rounded-lg p-2 transition hover:bg-accent/20"
+                >
+                  <Edit3 size={16} className="text-accent" />
+                </button>
+              </div>
+              {existingRating.review && (
+                <p className="mt-1.5 text-[11px] italic text-text-main/85 md:text-sm">"{existingRating.review}"</p>
+              )}
+            </div>
+          )}
+
+          {genreChips.length > 0 && <div className="hidden flex-wrap gap-2 sm:flex">{genreChips}</div>}
+
+          <div className="hidden sm:block">
             <MovieActions
               isLogged={isLogged}
               isInWatchlist={isInWatchlist}
@@ -172,6 +134,70 @@ export function MovieHero({
               onShare={onShare}
               watchlistLoading={watchlistLoading}
               shareSuccess={shareSuccess}
+              watchlistFeedback={watchlistFeedback}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto mt-3 w-full max-w-7xl px-2.5 sm:hidden">
+        <div className="space-y-2 rounded-2xl border border-white/10 bg-surface/40 p-2.5 backdrop-blur-md">
+          <div className="flex flex-wrap gap-1.5">
+            <MetricBadge
+              icon={Calendar}
+              value={movie.release_date?.slice(0, 4) || "N/A"}
+              label="Year"
+            />
+            <div className="rounded-xl border border-white/10 bg-black/25 px-2.5 py-1.5 backdrop-blur-sm">
+              <StarRating value={movie.rating / 2 || 0} size={15} showText={true} />
+            </div>
+            {movie.runtime && (
+              <MetricBadge
+                icon={Clock}
+                value={`${Math.floor(movie.runtime / 60)}h ${movie.runtime % 60}m`}
+                label="Runtime"
+              />
+            )}
+          </div>
+
+          {genreChips.length > 0 && <div className="flex flex-wrap gap-1.5">{genreChips}</div>}
+
+          {isLogged && existingRating && (
+            <div className="rounded-xl border border-accent/30 bg-accent/10 px-2 py-1.5 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] font-medium text-accent">Your Rating</p>
+                  <StarRating value={existingRating.rating} size={13} />
+                  {formatWatchedDate(existingRating.watched_date) && (
+                    <p className="mt-0.5 text-[10px] text-text-soft">
+                      Watched on {formatWatchedDate(existingRating.watched_date)}
+                    </p>
+                  )}
+                </div>
+                <button
+                  onClick={onLogMovie}
+                  className="rounded-lg p-1.5 transition hover:bg-accent/20"
+                >
+                  <Edit3 size={13} className="text-accent" />
+                </button>
+              </div>
+              {existingRating.review && (
+                <p className="mt-1 text-[10px] italic text-text-main/85">"{existingRating.review}"</p>
+              )}
+            </div>
+          )}
+
+          <div className="mt-2.5">
+            <MovieActions
+              isLogged={isLogged}
+              isInWatchlist={isInWatchlist}
+              onLogMovie={onLogMovie}
+              onWatchlistAction={onWatchlistAction}
+              onShare={onShare}
+              watchlistLoading={watchlistLoading}
+              shareSuccess={shareSuccess}
+              watchlistFeedback={watchlistFeedback}
+              compactMobile={true}
             />
           </div>
         </div>

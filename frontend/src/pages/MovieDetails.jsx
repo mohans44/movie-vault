@@ -5,9 +5,11 @@ import { useAuth } from "../context/AuthContext";
 import { useMovieData } from "../hooks/useMovieData";
 import { MovieHero } from "../components/MovieHero";
 import { CastSection } from "../components/CastSection";
+import { CrewSection } from "../components/CrewSection";
 import { ReviewsSection } from "../components/ReviewsSection";
 import { RecommendationsSection } from "../components/RecommendationsSection";
 import { LoadingSpinner } from "../components/LoadingSpinner";
+import { WhereToWatch } from "../components/WhereToWatch";
 import LogMovieModal from "../components/LogMovieModal";
 
 export default function MovieDetails() {
@@ -16,6 +18,7 @@ export default function MovieDetails() {
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [shareSuccess, setShareSuccess] = useState(false);
   const [watchlistLoading, setWatchlistLoading] = useState(false);
+  const [watchlistFeedback, setWatchlistFeedback] = useState(null);
 
   const {
     movie,
@@ -23,14 +26,18 @@ export default function MovieDetails() {
     reviews,
     watchlist,
     existingRating,
+    watchProviders,
+    watchProvidersRegion,
     loading,
     loadingRec,
     loadingReviews,
+    loadingProviders,
     refreshUserLogAndReviews,
   } = useMovieData(id, user);
 
   const [localRating, setLocalRating] = useState(null);
   const [lastDeletedReviewUser, setLastDeletedReviewUser] = useState(null);
+  const [optimisticWatchlistState, setOptimisticWatchlistState] = useState(null);
 
   useEffect(() => {
     setLocalRating(existingRating);
@@ -39,10 +46,17 @@ export default function MovieDetails() {
   }, [existingRating, id]);
 
   const isLogged = !!localRating;
-  const isInWatchlist = watchlist.some((m) => {
+  const serverWatchlistState = watchlist.some((m) => {
     const movieId = m.movie_id || m;
     return movieId == id || movieId == parseInt(id);
   });
+  const isInWatchlist =
+    optimisticWatchlistState === null ? serverWatchlistState : optimisticWatchlistState;
+
+  useEffect(() => {
+    setOptimisticWatchlistState(null);
+    setWatchlistFeedback(null);
+  }, [id, watchlist, user?.username]);
 
   const handleLogMovie = () => {
     if (!user) return alert("Please log in to rate movies");
@@ -62,14 +76,25 @@ export default function MovieDetails() {
 
   const handleWatchlistAction = async () => {
     if (!user) return alert("Please log in to manage watchlist");
+    if (watchlistLoading) return;
+
+    const nextState = !isInWatchlist;
+    setOptimisticWatchlistState(nextState);
+    setWatchlistFeedback(null);
     setWatchlistLoading(true);
     try {
-      if (isInWatchlist) {
-        await removeFromWatchlist(user.username, movie.id);
-      } else {
+      if (nextState) {
         await addToWatchlist(user.username, movie.id);
+        setWatchlistFeedback("added");
+      } else {
+        await removeFromWatchlist(user.username, movie.id);
+        setWatchlistFeedback("removed");
       }
       refreshUserLogAndReviews();
+      setTimeout(() => setWatchlistFeedback(null), 1200);
+    } catch {
+      setOptimisticWatchlistState(!nextState);
+      setWatchlistFeedback(null);
     } finally {
       setWatchlistLoading(false);
     }
@@ -112,31 +137,50 @@ export default function MovieDetails() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-surface text-text-main overflow-hidden">
-      <MovieHero
-        movie={movie}
-        existingRating={localRating}
-        isLogged={isLogged}
-        isInWatchlist={isInWatchlist}
-        onLogMovie={handleLogMovie}
-        onWatchlistAction={handleWatchlistAction}
-        onShare={handleShare}
-        watchlistLoading={watchlistLoading}
-        shareSuccess={shareSuccess}
-      />
-      <CastSection cast={movie?.cast || []} />
-      <ReviewsSection
-        reviews={reviews}
-        loading={loadingReviews}
-        user={user}
-        onLogMovie={handleLogMovie}
-        userRating={localRating}
-        lastDeletedReviewUser={lastDeletedReviewUser}
-      />
-      <RecommendationsSection
-        recommendations={recommendations}
-        loading={loadingRec}
-      />
+    <div className="relative min-h-screen overflow-hidden text-text-main">
+      {movie.backdrop_path && (
+        <div
+          className="pointer-events-none fixed inset-0 z-0 bg-cover bg-center opacity-35"
+          style={{ backgroundImage: `url(${movie.backdrop_path})` }}
+          aria-hidden="true"
+        />
+      )}
+      <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(circle_at_25%_12%,rgba(8,10,18,0.28),transparent_35%),linear-gradient(to_bottom,rgba(7,9,16,0.28),rgba(7,9,16,0.78)_40%,rgba(7,9,16,0.96)_70%,rgba(7,9,16,1)_100%)]" />
+
+      <div className="relative z-10 pb-4">
+        <MovieHero
+          movie={movie}
+          existingRating={localRating}
+          isLogged={isLogged}
+          isInWatchlist={isInWatchlist}
+          onLogMovie={handleLogMovie}
+          onWatchlistAction={handleWatchlistAction}
+          onShare={handleShare}
+          watchlistLoading={watchlistLoading}
+          shareSuccess={shareSuccess}
+          watchlistFeedback={watchlistFeedback}
+        />
+        <CastSection cast={movie?.cast || []} />
+        <CrewSection crew={movie?.crew || []} />
+        <WhereToWatch
+          providers={watchProviders}
+          region={watchProvidersRegion}
+          loading={loadingProviders}
+        />
+        <ReviewsSection
+          reviews={reviews}
+          loading={loadingReviews}
+          user={user}
+          onLogMovie={handleLogMovie}
+          userRating={localRating}
+          lastDeletedReviewUser={lastDeletedReviewUser}
+        />
+        <RecommendationsSection
+          recommendations={recommendations}
+          loading={loadingRec}
+        />
+      </div>
+
       <LogMovieModal
         movie={movie}
         isOpen={isLogModalOpen}

@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { loginUser, signupUser } from "../utils/api";
+import { loginUser, signupUser, updateUserProfile } from "../utils/api";
 
 const AuthContext = createContext();
 
@@ -58,8 +58,19 @@ export function AuthProvider({ children }) {
     setUser(null);
   };
 
+  const updateProfile = async (payload) => {
+    const data = await updateUserProfile(payload);
+    if (data?.user) {
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setUser(data.user);
+    }
+    return data?.user || null;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, signup, logout }}>
+    <AuthContext.Provider
+      value={{ user, loading, login, signup, logout, updateProfile }}
+    >
       {children}
     </AuthContext.Provider>
   );

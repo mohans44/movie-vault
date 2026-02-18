@@ -3,15 +3,15 @@ import StarRating from "./StarRating";
 
 export default function ReviewCard({ review }) {
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-surface/30 hover:border-accent/30 transition-all duration-200">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-accent/20 to-accent/10 rounded-full flex items-center justify-center">
-            <User size={18} className="text-accent" />
+    <div className="rounded-xl border border-white/10 bg-surface/55 p-3 shadow-soft backdrop-blur-sm transition hover:border-accent/30 md:rounded-2xl md:p-4">
+      <div className="mb-2.5 flex items-start justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-accent/20 to-accent/10 md:h-9 md:w-9">
+            <User size={15} className="text-accent" />
           </div>
           <div>
-            <p className="font-medium text-text-main">{review.username}</p>
-            <p className="text-text-soft text-sm">
+            <p className="text-sm font-medium text-text-main">{review.username}</p>
+            <p className="text-xs text-text-soft">
               {new Date(
                 review.watched_date || review.created_at
               ).toLocaleDateString()}
@@ -19,11 +19,11 @@ export default function ReviewCard({ review }) {
           </div>
         </div>
         <div className="flex items-center gap-1">
-          <StarRating value={review.rating} />
+          <StarRating value={review.rating} size={14} />
         </div>
       </div>
       {review.review && (
-        <p className="text-text-main leading-relaxed">{review.review}</p>
+        <p className="text-[13px] leading-relaxed text-text-main/95 md:text-sm">{review.review}</p>
       )}
     </div>
   );

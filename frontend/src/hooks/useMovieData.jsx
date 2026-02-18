@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   fetchMovieDetails,
   getMovieRecommendations,
+  getMovieWatchProviders,
   getLoggedMovies,
   getWatchlist,
   getRatings,
@@ -14,9 +15,12 @@ export function useMovieData(id, user) {
   const [loggedMovies, setLoggedMovies] = useState([]);
   const [watchlist, setWatchlist] = useState([]);
   const [existingRating, setExistingRating] = useState(null);
+  const [watchProviders, setWatchProviders] = useState([]);
+  const [watchProvidersRegion, setWatchProvidersRegion] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingRec, setLoadingRec] = useState(true);
   const [loadingReviews, setLoadingReviews] = useState(true);
+  const [loadingProviders, setLoadingProviders] = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -37,6 +41,22 @@ export function useMovieData(id, user) {
     } else {
       setRecommendations([]);
       setLoadingRec(false);
+    }
+  }, [movie]);
+
+  useEffect(() => {
+    setLoadingProviders(true);
+    if (movie?.id) {
+      getMovieWatchProviders(movie.id)
+        .then((data) => {
+          setWatchProviders(data.providers || []);
+          setWatchProvidersRegion(data.region || null);
+        })
+        .finally(() => setLoadingProviders(false));
+    } else {
+      setWatchProviders([]);
+      setWatchProvidersRegion(null);
+      setLoadingProviders(false);
     }
   }, [movie]);
 
@@ -91,9 +111,12 @@ export function useMovieData(id, user) {
     loggedMovies,
     watchlist,
     existingRating,
+    watchProviders,
+    watchProvidersRegion,
     loading,
     loadingRec,
     loadingReviews,
+    loadingProviders,
     refreshUserLogAndReviews,
   };
 }

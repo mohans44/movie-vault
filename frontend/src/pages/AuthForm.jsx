@@ -30,43 +30,48 @@ export default function AuthForm({ defaultMode = "login" }) {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (event) => {
+    setForm({ ...form, [event.target.name]: event.target.value });
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (event) => {
+    event.preventDefault();
     setError("");
+
     try {
       await login(user, password);
       toast.success("Welcome back!");
       navigate("/");
-    } catch {
-      setError("Invalid credentials");
-      toast.error("Login failed.");
+    } catch (err) {
+      const message = err?.message || "Login failed. Please try again.";
+      setError(message);
+      toast.error(message);
     }
   };
 
-  const handleSignup = async (e) => {
-    e.preventDefault();
+  const handleSignup = async (event) => {
+    event.preventDefault();
     setError("");
+
     if (form.password !== form.confirmPassword) {
       setError("Passwords do not match.");
       toast.error("Passwords do not match.");
       return;
     }
+
     try {
       await signup(form);
       toast.success("Signup successful!");
       navigate("/");
     } catch (err) {
-      setError(err?.toString() || "Signup failed. Please try again.");
-      toast.error("Signup failed.");
+      const message = err?.message || "Signup failed. Please try again.";
+      setError(message);
+      toast.error(message);
     }
   };
 
-  const switchMode = (newMode) => {
-    setMode(newMode);
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
     setError("");
     setForm(initialSignup);
     setUser("");
@@ -74,154 +79,166 @@ export default function AuthForm({ defaultMode = "login" }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-accent/5 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-accent/3 rounded-full blur-3xl"></div>
-      </div>
+    <div className="relative min-h-screen overflow-hidden px-3 py-4 sm:px-4 sm:py-8">
+      <div className="pointer-events-none absolute -left-16 top-10 h-48 w-48 rounded-full bg-primary/20 blur-3xl" />
+      <div className="pointer-events-none absolute -right-20 bottom-10 h-56 w-56 rounded-full bg-cta/20 blur-3xl" />
 
-      <div className="relative w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            {mode === "login" ? "Welcome back" : "Create account"}
-          </h1>
-          <p className="text-text-soft">
-            {mode === "login"
-              ? "Sign in to your account to continue"
-              : "Join us and start your journey"}
-          </p>
-        </div>
-
-        <div className="bg-surface border border-surface/40 rounded-2xl p-8 shadow-xl backdrop-blur-sm">
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-400/20 rounded-xl text-red-400 text-sm text-center font-medium">
-              {error}
+      <div className="relative mx-auto flex w-full max-w-5xl items-center justify-center md:min-h-[78vh]">
+        <div className="grid w-full overflow-hidden rounded-3xl border border-white/15 shadow-card md:grid-cols-2">
+          <section className="hidden bg-[linear-gradient(165deg,rgba(114,132,255,0.2),rgba(56,217,214,0.09),rgba(10,12,20,0.78))] p-8 md:flex md:flex-col md:justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-primary">Flick Deck</p>
+              <h2 className="mt-3 font-display text-4xl font-bold text-text-main leading-tight">
+                Track every watch,
+                <br />
+                keep your vibe list sharp.
+              </h2>
             </div>
-          )}
+            <p className="max-w-sm text-sm text-text-soft">
+              Log what you watched, rate it in seconds, and build a personal catalog that looks as good as your taste.
+            </p>
+          </section>
 
-          <form
-            onSubmit={mode === "login" ? handleLogin : handleSignup}
-            className="space-y-5"
-          >
-            {mode === "signup" && (
-              <>
+          <section className="glass-panel p-4 sm:p-6 md:p-8">
+            <div className="mb-5 sm:mb-7">
+              <h1 className="font-display text-2xl font-bold text-text-main sm:text-3xl">
+                {mode === "login" ? "Sign in" : "Create account"}
+              </h1>
+              <p className="mt-1 text-sm text-text-soft">
+                {mode === "login"
+                  ? "Continue where you left off."
+                  : "Start building your movie journal."}
+              </p>
+            </div>
+
+            {error && (
+              <div className="mb-5 rounded-xl border border-rose-400/35 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                {error}
+              </div>
+            )}
+
+            <form
+              onSubmit={mode === "login" ? handleLogin : handleSignup}
+              className="space-y-4"
+            >
+              {mode === "signup" && (
+                <>
+                  <InputField
+                    icon={<FaSignature size={16} />}
+                    type="text"
+                    name="name"
+                    value={form.name}
+                    onChange={handleChange}
+                    placeholder="Full name"
+                    autoFocus
+                    required
+                  />
+                  <InputField
+                    icon={<FaUser size={16} />}
+                    type="text"
+                    name="username"
+                    value={form.username}
+                    onChange={handleChange}
+                    placeholder="Username"
+                    required
+                  />
+                  <InputField
+                    icon={<FaEnvelope size={16} />}
+                    type="email"
+                    name="mail"
+                    value={form.mail}
+                    onChange={handleChange}
+                    placeholder="Email address"
+                    required
+                  />
+                </>
+              )}
+
+              {mode === "login" && (
                 <InputField
-                  icon={<FaSignature size={18} />}
+                  icon={<FaUser size={16} />}
                   type="text"
-                  name="name"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="Full Name"
+                  value={user}
+                  onChange={(event) => setUser(event.target.value)}
+                  placeholder="Username or email"
                   autoFocus
                   required
                 />
-                <InputField
-                  icon={<FaUser size={18} />}
-                  type="text"
-                  name="username"
-                  value={form.username}
-                  onChange={handleChange}
-                  placeholder="Username"
-                  required
-                />
-                <InputField
-                  icon={<FaEnvelope size={18} />}
-                  type="email"
-                  name="mail"
-                  value={form.mail}
-                  onChange={handleChange}
-                  placeholder="Email address"
-                  required
-                />
-              </>
-            )}
+              )}
 
-            {mode === "login" && (
               <InputField
-                icon={<FaUser size={18} />}
-                type="text"
-                value={user}
-                onChange={(e) => setUser(e.target.value)}
-                placeholder="Username or Email"
-                autoFocus
-                required
-              />
-            )}
-
-            <InputField
-              icon={<FaLock size={18} />}
-              type={showPass ? "text" : "password"}
-              name={mode === "login" ? undefined : "password"}
-              value={mode === "login" ? password : form.password}
-              onChange={
-                mode === "login"
-                  ? (e) => setPassword(e.target.value)
-                  : handleChange
-              }
-              placeholder="Password"
-              required
-              rightIcon={
-                <button
-                  type="button"
-                  tabIndex={-1}
-                  className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
-                  onClick={() => setShowPass(!showPass)}
-                  aria-label={showPass ? "Hide password" : "Show password"}
-                >
-                  {showPass ? <FaEyeSlash size={16} /> : <FaEye size={16} />}
-                </button>
-              }
-            />
-
-            {mode === "signup" && (
-              <InputField
-                icon={<FaLock size={18} />}
-                type={showConfirm ? "text" : "password"}
-                name="confirmPassword"
-                value={form.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm Password"
+                icon={<FaLock size={16} />}
+                type={showPass ? "text" : "password"}
+                name={mode === "login" ? undefined : "password"}
+                value={mode === "login" ? password : form.password}
+                onChange={
+                  mode === "login"
+                    ? (event) => setPassword(event.target.value)
+                    : handleChange
+                }
+                placeholder="Password"
                 required
                 rightIcon={
                   <button
                     type="button"
                     tabIndex={-1}
-                    className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
-                    onClick={() => setShowConfirm(!showConfirm)}
-                    aria-label={showConfirm ? "Hide password" : "Show password"}
+                    className="rounded-lg p-2 text-text-soft hover:bg-white/10 hover:text-text-main"
+                    onClick={() => setShowPass((prev) => !prev)}
+                    aria-label={showPass ? "Hide password" : "Show password"}
                   >
-                    {showConfirm ? (
-                      <FaEyeSlash size={16} />
-                    ) : (
-                      <FaEye size={16} />
-                    )}
+                    {showPass ? <FaEyeSlash size={14} /> : <FaEye size={14} />}
                   </button>
                 }
               />
-            )}
 
-            <button
-              type="submit"
-              className="w-full mt-8 py-4 px-6 bg-accent hover:bg-accent-dark text-white font-semibold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:ring-offset-2 focus:ring-offset-surface shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
-            >
-              {mode === "login" ? "Sign in" : "Create account"}
-            </button>
-          </form>
+              {mode === "signup" && (
+                <InputField
+                  icon={<FaLock size={16} />}
+                  type={showConfirm ? "text" : "password"}
+                  name="confirmPassword"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm password"
+                  required
+                  rightIcon={
+                    <button
+                      type="button"
+                      tabIndex={-1}
+                      className="rounded-lg p-2 text-text-soft hover:bg-white/10 hover:text-text-main"
+                      onClick={() => setShowConfirm((prev) => !prev)}
+                      aria-label={showConfirm ? "Hide password" : "Show password"}
+                    >
+                      {showConfirm ? (
+                        <FaEyeSlash size={14} />
+                      ) : (
+                        <FaEye size={14} />
+                      )}
+                    </button>
+                  }
+                />
+              )}
 
-          <div className="mt-8 pt-6 border-t border-surface/30 text-center">
-            <p className="text-text-soft text-sm mb-3">
-              {mode === "login"
-                ? "Don't have an account?"
-                : "Already have an account?"}
-            </p>
-            <button
-              type="button"
-              className="text-accent hover:text-accent-dark font-semibold text-sm hover:underline transition-all duration-200"
-              onClick={() => switchMode(mode === "login" ? "signup" : "login")}
-            >
-              {mode === "login" ? "Sign up for free" : "Sign in instead"}
-            </button>
-          </div>
+              <button
+                type="submit"
+                className="mt-2 w-full rounded-xl border border-primary/45 bg-primary/85 px-5 py-3 text-sm font-semibold text-background shadow-glow transition hover:bg-primary"
+              >
+                {mode === "login" ? "Sign in" : "Create account"}
+              </button>
+            </form>
+
+            <div className="mt-6 border-t border-white/10 pt-5 text-center">
+              <p className="text-sm text-text-soft">
+                {mode === "login" ? "New to Flick Deck?" : "Already have an account?"}
+              </p>
+              <button
+                type="button"
+                className="mt-2 text-sm font-semibold text-primary hover:text-text-main"
+                onClick={() => switchMode(mode === "login" ? "signup" : "login")}
+              >
+                {mode === "login" ? "Create one now" : "Sign in instead"}
+              </button>
+            </div>
+          </section>
         </div>
       </div>
     </div>
@@ -232,24 +249,16 @@ function InputField({ icon, rightIcon, className = "", ...props }) {
   return (
     <div className="group relative">
       <div className="relative flex items-center">
-        <div className="absolute left-4 z-10 text-gray-400 group-focus-within:text-accent transition-colors duration-200">
+        <div className="absolute left-3.5 z-10 text-text-soft group-focus-within:text-primary">
           {icon}
         </div>
-
         <input
-          className={`
-            w-full h-14 pl-12 pr-4 
-            bg-background/50 border border-surface/60 rounded-xl
-            text-white placeholder-gray-400 
-            focus:outline-none focus:border-accent/50 focus:bg-background/80
-            transition-all duration-200
-            ${rightIcon ? "pr-14" : "pr-4"}
-            ${className}
-          `}
+          className={`h-12 w-full rounded-xl border border-white/15 bg-background/35 pl-10 text-sm text-text-main placeholder:text-text-soft/80 transition focus:border-primary/50 focus:outline-none ${
+            rightIcon ? "pr-12" : "pr-4"
+          } ${className}`}
           {...props}
         />
-
-        {rightIcon && <div className="absolute right-2 z-10">{rightIcon}</div>}
+        {rightIcon && <div className="absolute right-1 z-10">{rightIcon}</div>}
       </div>
     </div>
   );
