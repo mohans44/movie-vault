@@ -1,27 +1,33 @@
 import Rating from "../models/rating.model.js";
 import User from "../models/user.model.js";
 
+const normalizeMovieId = (value) => String(value ?? "").trim();
+
 export const addRating = async (req, res) => {
   const { username, movie_id, rating, review, watched_date } = req.body;
+  const normalizedMovieId = normalizeMovieId(movie_id);
   try {
+    if (!username || !normalizedMovieId) {
+      return res.status(400).json({ message: "Username and movie_id are required" });
+    }
     const user = await User.findOne({ username });
     if (!user) return res.status(404).json({ message: "User not found" });
-    const existing = await Rating.findOne({ username, movie_id });
+    const existing = await Rating.findOne({ username, movie_id: normalizedMovieId });
     if (existing)
       return res
         .status(400)
         .json({ message: "Rating already exists for this movie" });
     const newRating = new Rating({
       username,
-      movie_id,
+      movie_id: normalizedMovieId,
       rating: rating !== undefined ? rating : 0,
       review: review !== undefined ? review : "",
       watched_date,
     });
     const savedRating = await newRating.save();
-    if (!user.logged.includes(movie_id)) {
-      user.logged.push(movie_id);
-      user.watchlist = user.watchlist.filter((id) => id !== movie_id);
+    if (!user.logged.map(String).includes(normalizedMovieId)) {
+      user.logged.push(normalizedMovieId);
+      user.watchlist = user.watchlist.filter((id) => String(id) !== normalizedMovieId);
       await user.save();
     }
     res.status(201).json(savedRating);
@@ -34,8 +40,15 @@ export const addRating = async (req, res) => {
 
 export const editRating = async (req, res) => {
   const { username, movie_id, rating, review } = req.body;
+  const normalizedMovieId = normalizeMovieId(movie_id);
   try {
-    const ratingDoc = await Rating.findOne({ username, movie_id });
+    if (!username || !normalizedMovieId) {
+      return res.status(400).json({ message: "Username and movie_id are required" });
+    }
+    const ratingDoc = await Rating.findOne({
+      username,
+      movie_id: normalizedMovieId,
+    });
     if (!ratingDoc)
       return res.status(404).json({ message: "Rating not found" });
     if (rating !== undefined) ratingDoc.rating = rating;
@@ -51,13 +64,20 @@ export const editRating = async (req, res) => {
 
 export const deleteRating = async (req, res) => {
   const { username, movie_id } = req.body;
+  const normalizedMovieId = normalizeMovieId(movie_id);
   try {
-    const ratingDoc = await Rating.findOneAndDelete({ username, movie_id });
+    if (!username || !normalizedMovieId) {
+      return res.status(400).json({ message: "Username and movie_id are required" });
+    }
+    const ratingDoc = await Rating.findOneAndDelete({
+      username,
+      movie_id: normalizedMovieId,
+    });
     if (!ratingDoc)
       return res.status(404).json({ message: "Rating not found" });
     const user = await User.findOne({ username });
     if (user) {
-      user.logged = user.logged.filter((id) => id !== movie_id);
+      user.logged = user.logged.filter((id) => String(id) !== normalizedMovieId);
       await user.save();
     }
     res.status(200).json({ message: "Rating deleted successfully" });

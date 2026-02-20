@@ -3,17 +3,22 @@ import bcrypt from "bcrypt";
 import User from "../models/user.model.js";
 
 const getUser = async (username) => User.findOne({ username });
+const normalizeMovieId = (value) => String(value ?? "").trim();
 
 export const addToWatchlist = async (req, res) => {
   const { username, movie_id } = req.body;
-  if (!username || !movie_id)
+  const normalizedMovieId = normalizeMovieId(movie_id);
+  if (!username || !normalizedMovieId)
     return res
       .status(400)
       .json({ error: "Username and movie ID are required" });
   const user = await getUser(username);
   if (!user) return res.status(404).json({ error: "User not found" });
-  await User.updateOne({ username }, { $pull: { logged: movie_id } });
-  await User.updateOne({ username }, { $addToSet: { watchlist: movie_id } });
+  await User.updateOne({ username }, { $pull: { logged: normalizedMovieId } });
+  await User.updateOne(
+    { username },
+    { $addToSet: { watchlist: normalizedMovieId } }
+  );
   return res
     .status(200)
     .json({ message: "Movie added to watchlist successfully" });
@@ -21,11 +26,19 @@ export const addToWatchlist = async (req, res) => {
 
 export const removeFromWatchlist = async (req, res) => {
   const { username, movie_id } = req.body;
+  const normalizedMovieId = normalizeMovieId(movie_id);
+  if (!username || !normalizedMovieId)
+    return res
+      .status(400)
+      .json({ error: "Username and movie ID are required" });
   const user = await getUser(username);
   if (!user) return res.status(404).json({ error: "User not found" });
-  if (!user.watchlist.includes(movie_id))
+  if (!user.watchlist.map(String).includes(normalizedMovieId))
     return res.status(400).json({ error: "Movie not in watchlist" });
-  await User.updateOne({ username }, { $pull: { watchlist: movie_id } });
+  await User.updateOne(
+    { username },
+    { $pull: { watchlist: normalizedMovieId } }
+  );
   return res
     .status(200)
     .json({ message: "Movie removed from watchlist successfully" });
