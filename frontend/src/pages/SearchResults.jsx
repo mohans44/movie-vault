@@ -5,7 +5,7 @@ import { searchAll } from "../utils/api";
 import { Star, Calendar, TrendingUp, Users, Clapperboard, Film } from "lucide-react";
 
 const MOVIE_SORT_OPTIONS = [
-  { value: "popularity", text: "Original (Popularity)" },
+  { value: "popularity", text: "Popularity (Highest First)" },
   { value: "date-desc", text: "Release Date (Newest First)" },
   { value: "date-asc", text: "Release Date (Oldest First)" },
   { value: "rating-desc", text: "Rating (Highest First)" },
@@ -102,6 +102,8 @@ export default function SearchResults() {
 
     return [...movies].sort((a, b) => {
       switch (sortBy) {
+        case "popularity":
+          return (b.popularity || 0) - (a.popularity || 0);
         case "date-desc":
           return getYear(b) - getYear(a);
         case "date-asc":
@@ -132,7 +134,7 @@ export default function SearchResults() {
             {query && <span className="text-primary"> for "{query}"</span>}
           </h1>
 
-          <div className="mt-2.5 flex flex-col gap-2.5 md:mt-4 md:gap-3">
+            <div className="mt-2.5 flex flex-col gap-2.5 md:mt-4 md:gap-3">
             <p className="text-xs text-text-soft md:text-sm">
               {!loading && totalVisibleCount > 0
                 ? `Showing ${totalVisibleCount} result${totalVisibleCount !== 1 ? "s" : ""}`
@@ -176,10 +178,10 @@ export default function SearchResults() {
             </div>
 
             {showMovies && (
-              <label className="flex items-center justify-between gap-2 text-[11px] uppercase tracking-[0.14em] text-text-soft md:max-w-[380px] md:text-xs">
-                Movie sort
+              <div className="flex items-center justify-between gap-2 text-[11px] uppercase tracking-[0.14em] text-text-soft md:max-w-[460px] md:text-xs">
+                <span>Movie sort</span>
                 <select
-                  className="min-w-[150px] rounded-xl border border-white/15 bg-surface/75 px-3 py-2 text-[11px] font-semibold tracking-normal text-text-main focus:border-primary/60 focus:outline-none md:min-w-[190px] md:text-xs"
+                  className="min-w-[170px] rounded-xl border border-white/15 bg-surface/75 px-3 py-2 text-[11px] font-semibold tracking-normal text-text-main focus:border-primary/60 focus:outline-none md:min-w-[230px] md:text-xs"
                   value={sortBy}
                   onChange={(event) => setSortBy(event.target.value)}
                 >
@@ -189,7 +191,7 @@ export default function SearchResults() {
                     </option>
                   ))}
                 </select>
-              </label>
+              </div>
             )}
           </div>
         </div>
@@ -327,7 +329,7 @@ function PersonSection({ title, icon, people, navigate }) {
           <button
             key={`${title}-${person.id}`}
             type="button"
-            onClick={() => navigate(`/person/${person.id}?role=${mapPersonRole(person)}`)}
+            onClick={() => navigate(`/people/${person.id}?role=${mapPersonRole(person)}`)}
             className="flex items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-surface/55 p-2 text-left transition hover:border-primary/35 hover:bg-surface/65 sm:block sm:p-3"
           >
             <img
@@ -341,8 +343,12 @@ function PersonSection({ title, icon, people, navigate }) {
               className="h-14 w-14 rounded-full object-cover sm:aspect-[2/3] sm:h-auto sm:w-full sm:rounded-xl"
             />
             <div className="min-w-0 sm:mt-2">
-              <p className="line-clamp-1 text-sm font-semibold text-text-main">{person.name}</p>
-              <p className="line-clamp-1 text-xs text-text-soft">{getProfessionLabel(person)}</p>
+              <p className="line-clamp-1 text-sm font-semibold text-text-main">
+                {person.name}
+                <span className="ml-1.5 text-xs font-normal text-text-soft">
+                  • {getProfessionLabel(person)}
+                </span>
+              </p>
             </div>
           </button>
         ))}

@@ -14,7 +14,6 @@ function resolveBaseUrl() {
       return "http://localhost:8000";
     }
 
-    // In deployed environments, default to same-origin to avoid localhost fallbacks.
     return window.location.origin.replace(/\/$/, "");
   }
 
@@ -31,6 +30,31 @@ const CACHE_TTL = {
   medium: 5 * 60 * 1000,
   long: 20 * 60 * 1000,
 };
+
+function clearSessionAndNotify() {
+  try {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    Object.keys(sessionStorage).forEach((key) => {
+      if (key.startsWith(API_CACHE_PREFIX)) {
+        sessionStorage.removeItem(key);
+      }
+    });
+  } catch {
+    // Ignore storage issues.
+  }
+
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth:expired"));
+  }
+}
+
+function handleProtectedApiError(error) {
+  const status = error?.response?.status;
+  if (status === 401 || status === 403) {
+    clearSessionAndNotify();
+  }
+}
 
 function getAuthHeaders() {
   const token = localStorage.getItem("token");
@@ -64,7 +88,7 @@ function setCachedValue(key, value, ttlMs) {
   try {
     sessionStorage.setItem(
       toCacheKey(key),
-      JSON.stringify({ value, expiry: Date.now() + ttlMs })
+      JSON.stringify({ value, expiry: Date.now() + ttlMs }),
     );
   } catch {
     // Ignore storage quota issues.
@@ -113,7 +137,11 @@ function getCrewPriority(role = "") {
   if (value.includes("music") || value.includes("composer")) return 2;
   if (value.includes("story")) return 3;
   if (value.includes("screenplay") || value.includes("writer")) return 4;
-  if (value.includes("cinematography") || value.includes("director of photography")) return 5;
+  if (
+    value.includes("cinematography") ||
+    value.includes("director of photography")
+  )
+    return 5;
   if (value.includes("editor")) return 6;
   if (value.includes("production design")) return 7;
   if (value.includes("costume")) return 8;
@@ -137,7 +165,8 @@ function extractAuthError(error, fallback) {
   if (status === 400) return "Please fill all required fields.";
   if (status === 401) return "Invalid credentials.";
   if (status === 409) return "This account already exists.";
-  if (status === 503) return "Service temporarily unavailable. Please try again shortly.";
+  if (status === 503)
+    return "Service temporarily unavailable. Please try again shortly.";
   if (status >= 500) return "Server error. Please try again shortly.";
 
   return fallback;
@@ -174,7 +203,7 @@ export const fetchMovieDetails = async (id) => {
         .filter(
           (person, index, arr) =>
             arr.findIndex((p) => p.id === person.id && p.job === person.job) ===
-            index
+            index,
         )
         .map((person) => ({
           id: person.id,
@@ -183,7 +212,8 @@ export const fetchMovieDetails = async (id) => {
           profile_path: tmdbImage(person.profile_path, "w185"),
         }))
         .sort((a, b) => {
-          const priorityDelta = getCrewPriority(a.role) - getCrewPriority(b.role);
+          const priorityDelta =
+            getCrewPriority(a.role) - getCrewPriority(b.role);
           if (priorityDelta !== 0) return priorityDelta;
           const hasPhotoDelta =
             Number(Boolean(b.profile_path)) - Number(Boolean(a.profile_path));
@@ -197,11 +227,13 @@ export const fetchMovieDetails = async (id) => {
         original_title: movie.original_title,
         overview: movie.overview,
         tagline: movie.tagline,
+        poster_path_raw: movie.poster_path || null,
         poster_path: movie.poster_path
-          ? tmdbImage(movie.poster_path, "w500")
+          ? tmdbImage(movie.poster_path, "w342")
           : null,
+        backdrop_path_raw: movie.backdrop_path || null,
         backdrop_path: movie.backdrop_path
-          ? tmdbImage(movie.backdrop_path, "w1280")
+          ? tmdbImage(movie.backdrop_path, "w780")
           : null,
         release_date: movie.release_date,
         genres: movie.genres || [],
@@ -215,7 +247,7 @@ export const fetchMovieDetails = async (id) => {
         crew,
       };
     },
-    CACHE_TTL.long
+    CACHE_TTL.long,
   );
 };
 
@@ -226,11 +258,11 @@ export const searchMovies = async (query) => {
       async () => {
         const searchResponse = await axios.get(
           `${BASE_URL}/api/movies/proxy/tmdb/search/movie`,
-          { params: { query }, headers: getAuthHeaders() }
+          { params: { query }, headers: getAuthHeaders() },
         );
         return searchResponse.data.results || [];
       },
-      CACHE_TTL.short
+      CACHE_TTL.short,
     );
   } catch (error) {
     console.error("Error searching movies:", error);
@@ -248,18 +280,22 @@ export const searchAll = async (query) => {
           {
             params: { query, include_adult: false },
             headers: getAuthHeaders(),
-          }
+          },
         );
 
         const results = response.data.results || [];
         const movies = results.filter((item) => item.media_type === "movie");
         const people = results.filter((item) => item.media_type === "person");
-        const cast = people.filter((person) => person.known_for_department === "Acting");
-        const crew = people.filter((person) => person.known_for_department !== "Acting");
+        const cast = people.filter(
+          (person) => person.known_for_department === "Acting",
+        );
+        const crew = people.filter(
+          (person) => person.known_for_department !== "Acting",
+        );
 
         return { movies, cast, crew };
       },
-      CACHE_TTL.short
+      CACHE_TTL.short,
     );
   } catch (error) {
     console.error("Error searching movies/cast/crew:", error);
@@ -273,17 +309,17 @@ export const getTopMoviesWorldwide = async (page = 1) => {
     async () => {
       const response = await axios.get(
         `${BASE_URL}/api/movies/proxy/tmdb/trending/movie/week`,
-        { params: { page }, headers: getAuthHeaders() }
+        { params: { page }, headers: getAuthHeaders() },
       );
       const currentPage = Number(response.data?.page || page);
       const totalPages = Number(response.data?.total_pages || 1);
       const results = (response.data.results || []).filter(
-        (movie) => Number(movie.vote_average || movie.rating || 0) >= 2
+        (movie) => Number(movie.vote_average || movie.rating || 0) >= 2,
       );
       const hasMore = currentPage < totalPages;
       return { results, hasMore };
     },
-    CACHE_TTL.short
+    CACHE_TTL.short,
   );
 };
 
@@ -295,22 +331,26 @@ export const getTopMoviesIndia = async (page = 1) => {
         `${BASE_URL}/api/movies/proxy/tmdb/discover/movie`,
         {
           params: {
-            region: "IN",
             with_origin_country: "IN",
+            region: "IN",
+            include_adult: false,
+            sort_by: "popularity.desc",
+            "vote_count.gte": 80,
+            "primary_release_date.lte": new Date().toISOString().slice(0, 10),
             page,
           },
           headers: getAuthHeaders(),
-        }
+        },
       );
       const currentPage = Number(response.data?.page || page);
       const totalPages = Number(response.data?.total_pages || 1);
       const results = (response.data.results || []).filter(
-        (movie) => Number(movie.vote_average || movie.rating || 0) >= 2
+        (movie) => Number(movie.vote_average || movie.rating || 0) >= 2,
       );
       const hasMore = currentPage < totalPages;
       return { results, hasMore };
     },
-    CACHE_TTL.short
+    CACHE_TTL.short,
   );
 };
 
@@ -320,13 +360,13 @@ export const getLatestMoviesWorldwide = async (page = 1) => {
     async () => {
       const response = await axios.get(
         `${BASE_URL}/api/movies/proxy/tmdb/movie/now_playing`,
-        { params: { page }, headers: getAuthHeaders() }
+        { params: { page }, headers: getAuthHeaders() },
       );
       const results = response.data.results || [];
       const hasMore = results.length === 20;
       return { results, hasMore };
     },
-    CACHE_TTL.short
+    CACHE_TTL.short,
   );
 };
 
@@ -334,23 +374,37 @@ export const getLatestMoviesIndia = async (page = 1) => {
   return withCache(
     `movies:latest:india:${page}`,
     async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const twoYearsAgo = new Date(
+        Date.now() - 1000 * 60 * 60 * 24 * 730,
+      ).toISOString().slice(0, 10);
+
       const response = await axios.get(
         `${BASE_URL}/api/movies/proxy/tmdb/discover/movie`,
         {
           params: {
             with_origin_country: "IN",
+            region: "IN",
+            include_adult: false,
+            include_video: false,
             sort_by: "primary_release_date.desc",
-            "vote_average.gte": 0.1,
+            with_release_type: "2|3|4",
+            "primary_release_date.gte": twoYearsAgo,
+            "primary_release_date.lte": today,
             page,
           },
           headers: getAuthHeaders(),
-        }
+        },
       );
-      const results = response.data.results || [];
-      const hasMore = results.length === 20;
+      const currentPage = Number(response.data?.page || page);
+      const totalPages = Number(response.data?.total_pages || 1);
+      const results = (response.data.results || []).filter(
+        (movie) => Boolean(movie?.release_date),
+      );
+      const hasMore = currentPage < totalPages;
       return { results, hasMore };
     },
-    CACHE_TTL.short
+    CACHE_TTL.short,
   );
 };
 
@@ -367,13 +421,13 @@ export const getAwardWinningMovies = async (page = 1) => {
             page,
           },
           headers: getAuthHeaders(),
-        }
+        },
       );
       const results = response.data.results || [];
       const hasMore = results.length === 20;
       return { results, hasMore };
     },
-    CACHE_TTL.short
+    CACHE_TTL.short,
   );
 };
 
@@ -384,14 +438,37 @@ export const getMovieRecommendations = async (movieId) => {
       async () => {
         const response = await axios.get(
           `${BASE_URL}/api/movies/proxy/tmdb/movie/${movieId}/recommendations`,
-          { headers: getAuthHeaders() }
+          { headers: getAuthHeaders() },
         );
         return response.data.results || [];
       },
-      CACHE_TTL.medium
+      CACHE_TTL.medium,
     );
   } catch (error) {
     console.error("Error fetching movie recommendations:", error);
+    return [];
+  }
+};
+
+export const getMovieTmdbReviews = async (movieId, page = 1) => {
+  try {
+    return withCache(
+      `movie:tmdb:reviews:${movieId}:page:${page}`,
+      async () => {
+        const response = await axios.get(
+          `${BASE_URL}/api/movies/proxy/tmdb/movie/${movieId}/reviews`,
+          {
+            params: { language: "en-US", page },
+            headers: getAuthHeaders(),
+          },
+        );
+
+        return response.data?.results || [];
+      },
+      CACHE_TTL.short,
+    );
+  } catch (error) {
+    console.error("Error fetching TMDB reviews:", error);
     return [];
   }
 };
@@ -403,7 +480,7 @@ export const getMovieWatchProviders = async (movieId) => {
       async () => {
         const response = await axios.get(
           `${BASE_URL}/api/movies/proxy/tmdb/movie/${movieId}/watch/providers`,
-          { headers: getAuthHeaders() }
+          { headers: getAuthHeaders() },
         );
         const results = response.data?.results || {};
         const regionOrder = ["IN", "US"];
@@ -422,7 +499,9 @@ export const getMovieWatchProviders = async (movieId) => {
           ...mergeWithTag(regionData.buy, "Buy"),
         ];
         const deduped = merged.reduce((acc, provider) => {
-          const existing = acc.find((item) => item.provider_id === provider.provider_id);
+          const existing = acc.find(
+            (item) => item.provider_id === provider.provider_id,
+          );
           if (!existing) {
             acc.push({ ...provider, tags: [provider.tag] });
           } else if (!existing.tags.includes(provider.tag)) {
@@ -443,7 +522,7 @@ export const getMovieWatchProviders = async (movieId) => {
           })),
         };
       },
-      CACHE_TTL.medium
+      CACHE_TTL.medium,
     );
   } catch (error) {
     console.error("Error fetching watch providers:", error);
@@ -454,27 +533,30 @@ export const getMovieWatchProviders = async (movieId) => {
 
 export const addToWatchlist = async (username, movieId) => {
   try {
+    const normalizedMovieId = String(movieId);
     await axios.post(
       `${BASE_URL}/api/user/add-to-watchlist`,
-      { username, movie_id: movieId },
-      { headers: getAuthHeaders() }
+      { username, movie_id: normalizedMovieId },
+      { headers: getAuthHeaders() },
     );
     invalidateCacheByPrefix([
       `user:watchlist:${username}`,
       `user:recommendations:${username}`,
     ]);
     return true;
-  } catch {
+  } catch (error) {
+    handleProtectedApiError(error);
     return false;
   }
 };
 
 export const removeFromWatchlist = async (username, movieId) => {
   try {
+    const normalizedMovieId = String(movieId);
     const response = await axios.post(
       `${BASE_URL}/api/user/remove-from-watchlist`,
-      { username, movie_id: movieId },
-      { headers: getAuthHeaders() }
+      { username, movie_id: normalizedMovieId },
+      { headers: getAuthHeaders() },
     );
     invalidateCacheByPrefix([
       `user:watchlist:${username}`,
@@ -482,6 +564,7 @@ export const removeFromWatchlist = async (username, movieId) => {
     ]);
     return response.data;
   } catch (error) {
+    handleProtectedApiError(error);
     return { error: error.response?.data?.error || "An error occurred" };
   }
 };
@@ -497,9 +580,10 @@ export const getLoggedMovies = async (username) => {
         });
         return response.data.logged || [];
       },
-      CACHE_TTL.short
+      CACHE_TTL.short,
     );
-  } catch {
+  } catch (error) {
+    handleProtectedApiError(error);
     return [];
   }
 };
@@ -515,9 +599,10 @@ export const getWatchlist = async (username) => {
         });
         return response.data.watchlist || [];
       },
-      CACHE_TTL.short
+      CACHE_TTL.short,
     );
-  } catch {
+  } catch (error) {
+    handleProtectedApiError(error);
     return [];
   }
 };
@@ -530,13 +615,14 @@ export const getRecommendedMovies = async (username) => {
         const response = await axios.post(
           `${BASE_URL}/api/user/recommended-movies`,
           { username },
-          { headers: getAuthHeaders() }
+          { headers: getAuthHeaders() },
         );
         return response.data?.recommendations || [];
       },
-      CACHE_TTL.medium
+      CACHE_TTL.medium,
     );
   } catch (error) {
+    handleProtectedApiError(error);
     console.error("Error fetching recommended movies:", error.message);
     return [];
   }
@@ -549,7 +635,9 @@ export const signupUser = async (data) => {
     const response = await axios.post(`${BASE_URL}/api/auth/signup`, data);
     return response.data;
   } catch (error) {
-    throw new Error(extractAuthError(error, "Signup failed. Please try again."));
+    throw new Error(
+      extractAuthError(error, "Signup failed. Please try again."),
+    );
   }
 };
 
@@ -590,6 +678,7 @@ export const updateUserProfile = async (payload) => {
     }
     return response.data;
   } catch (error) {
+    handleProtectedApiError(error);
     throw new Error(extractAuthError(error, "Failed to update profile."));
   }
 };
@@ -601,66 +690,72 @@ export const addRating = async (
   movieId,
   rating,
   review = "",
-  watchedDate
+  watchedDate,
 ) => {
   try {
+    const normalizedMovieId = String(movieId);
     const response = await axios.post(
       `${BASE_URL}/api/ratings/add-rating`,
       {
         username,
-        movie_id: movieId,
+        movie_id: normalizedMovieId,
         rating,
         review,
         watched_date: watchedDate,
       },
-      { headers: getAuthHeaders() }
+      { headers: getAuthHeaders() },
     );
     invalidateCacheByPrefix([
-      `ratings:${movieId}`,
+      `ratings:${normalizedMovieId}`,
       `user:logged:${username}`,
       `user:watchlist:${username}`,
       `user:recommendations:${username}`,
     ]);
     return response.data;
   } catch (error) {
+    handleProtectedApiError(error);
     throw error.response?.data?.error || "Failed to add rating";
   }
 };
 
 export const editRating = async (username, movieId, rating, review = "") => {
   try {
+    const normalizedMovieId = String(movieId);
     const response = await axios.put(
       `${BASE_URL}/api/ratings/edit-rating`,
-      { username, movie_id: movieId, rating, review },
-      { headers: getAuthHeaders() }
+      { username, movie_id: normalizedMovieId, rating, review },
+      { headers: getAuthHeaders() },
     );
     invalidateCacheByPrefix([
-      `ratings:${movieId}`,
+      `ratings:${normalizedMovieId}`,
       `user:logged:${username}`,
       `user:recommendations:${username}`,
     ]);
     return response.data;
   } catch (error) {
+    handleProtectedApiError(error);
     throw error.response?.data?.error || "Failed to edit rating";
   }
 };
 
 export const deleteRating = async (username, movieId) => {
   try {
+    const normalizedMovieId = String(movieId);
     const response = await axios.delete(
       `${BASE_URL}/api/ratings/delete-rating`,
       {
-        data: { username, movie_id: movieId },
+        data: { username, movie_id: normalizedMovieId },
         headers: getAuthHeaders(),
-      }
+      },
     );
     invalidateCacheByPrefix([
-      `ratings:${movieId}`,
+      `ratings:${normalizedMovieId}`,
       `user:logged:${username}`,
       `user:recommendations:${username}`,
     ]);
     return response.data;
   } catch (error) {
+    handleProtectedApiError(error);
     throw error.response?.data?.error || "Failed to delete rating";
   }
 };
@@ -674,12 +769,12 @@ export const getRatings = async (movieId) => {
           `${BASE_URL}/api/ratings/get-ratings/${movieId}`,
           {
             headers: getAuthHeaders(),
-          }
+          },
         );
 
         return response.data;
       },
-      CACHE_TTL.short
+      CACHE_TTL.short,
     );
   } catch (error) {
     throw error.response?.data?.error || "Failed to fetch ratings";
@@ -692,7 +787,7 @@ export const fetchPersonDetails = async (personId) => {
     async () => {
       const response = await axios.get(
         `${BASE_URL}/api/movies/proxy/tmdb/person/${personId}`,
-        { headers: getAuthHeaders() }
+        { headers: getAuthHeaders() },
       );
 
       const person = response.data;
@@ -706,7 +801,7 @@ export const fetchPersonDetails = async (personId) => {
         profile_path: tmdbImage(person.profile_path, "w500"),
       };
     },
-    CACHE_TTL.long
+    CACHE_TTL.long,
   );
 };
 
@@ -716,7 +811,7 @@ export const fetchPersonCredits = async (personId) => {
     async () => {
       const response = await axios.get(
         `${BASE_URL}/api/movies/proxy/tmdb/person/${personId}/combined_credits`,
-        { headers: getAuthHeaders() }
+        { headers: getAuthHeaders() },
       );
 
       const cast = (response.data.cast || [])
@@ -746,6 +841,108 @@ export const fetchPersonCredits = async (personId) => {
 
       return { cast, crew };
     },
-    CACHE_TTL.long
+    CACHE_TTL.long,
   );
+};
+
+export const getLoungeDiscussions = async ({
+  query = "",
+  sort = "recent",
+  limit = 24,
+} = {}) => {
+  const normalizedQuery = String(query || "").trim();
+  const normalizedSort = sort === "popular" ? "popular" : "recent";
+
+  return withCache(
+    `lounge:list:${normalizedSort}:${limit}:${normalizedQuery.toLowerCase()}`,
+    async () => {
+      const response = await axios.get(`${BASE_URL}/api/lounge/discussions`, {
+        params: { q: normalizedQuery, sort: normalizedSort, limit },
+        headers: getAuthHeaders(),
+      });
+      return response.data?.discussions || [];
+    },
+    CACHE_TTL.short,
+  );
+};
+
+export const getLoungeDiscussionById = async (discussionId) => {
+  return withCache(
+    `lounge:discussion:${discussionId}`,
+    async () => {
+      const response = await axios.get(
+        `${BASE_URL}/api/lounge/discussions/${discussionId}`,
+        {
+          headers: getAuthHeaders(),
+        },
+      );
+      return response.data?.discussion || null;
+    },
+    CACHE_TTL.short,
+  );
+};
+
+export const createLoungeDiscussion = async ({
+  title,
+  cinema_name,
+  body,
+  tags = [],
+}) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/lounge/discussions`,
+      { title, cinema_name, body, tags },
+      { headers: getAuthHeaders() },
+    );
+    invalidateCacheByPrefix(["lounge:list:", "lounge:discussion:"]);
+    return response.data?.discussion || null;
+  } catch (error) {
+    handleProtectedApiError(error);
+    throw new Error(
+      error?.response?.data?.error || "Failed to create discussion",
+    );
+  }
+};
+
+export const addLoungeComment = async (
+  discussionId,
+  message,
+  parentCommentId = null,
+) => {
+  try {
+    const response = await axios.post(
+      `${BASE_URL}/api/lounge/discussions/${discussionId}/comments`,
+      { message, parent_comment_id: parentCommentId || null },
+      { headers: getAuthHeaders() },
+    );
+    invalidateCacheByPrefix([
+      `lounge:discussion:${discussionId}`,
+      "lounge:list:",
+    ]);
+    return response.data?.discussion || null;
+  } catch (error) {
+    handleProtectedApiError(error);
+    throw new Error(error?.response?.data?.error || "Failed to post comment");
+  }
+};
+
+export const deleteLoungeDiscussion = async (discussionId) => {
+  try {
+    const response = await axios.delete(
+      `${BASE_URL}/api/lounge/discussions/${discussionId}`,
+      {
+        headers: getAuthHeaders(),
+      },
+    );
+    invalidateCacheByPrefix([
+      `lounge:discussion:${discussionId}`,
+      "lounge:list:",
+    ]);
+    return response.data;
+  } catch (error) {
+    handleProtectedApiError(error);
+    throw new Error(
+      error?.response?.data?.error || "Failed to delete discussion",
+    );
+  }
 };

@@ -26,6 +26,16 @@ export function MovieHero({
   shareSuccess,
   watchlistFeedback,
 }) {
+  const posterSrc = movie.poster_path || "/no-image.svg";
+  const posterSrcSet = movie.poster_path_raw
+    ? [
+        `https://image.tmdb.org/t/p/w185${movie.poster_path_raw} 185w`,
+        `https://image.tmdb.org/t/p/w342${movie.poster_path_raw} 342w`,
+        `https://image.tmdb.org/t/p/w500${movie.poster_path_raw} 500w`,
+        `https://image.tmdb.org/t/p/w780${movie.poster_path_raw} 780w`,
+      ].join(", ")
+    : undefined;
+
   const genreChips = (movie.genres || []).map((genre) => (
     <span
       key={genre.id || genre.name}
@@ -43,8 +53,13 @@ export function MovieHero({
             <div className="relative group lg:h-full">
               <div className="absolute inset-0 -z-10 rounded-3xl bg-accent/15 blur-xl transition-transform duration-300 group-hover:scale-105" />
               <img
-                src={movie.poster_path || "/no-image.svg"}
+                src={posterSrc}
+                srcSet={posterSrcSet}
+                sizes="(max-width: 640px) 140px, (max-width: 1024px) 280px, 320px"
                 alt={movie.title}
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
                 className="h-[220px] w-full rounded-2xl border border-white/15 object-cover shadow-card sm:h-full sm:min-h-[400px] sm:rounded-3xl lg:min-h-0"
               />
               {isLogged && (

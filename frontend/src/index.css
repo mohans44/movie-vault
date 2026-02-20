@@ -5,17 +5,17 @@
 @tailwind utilities;
 
 :root {
-  --bg: 8 11 20;
-  --bg-soft: 13 20 36;
-  --surface: 26 39 64;
-  --surface-2: 39 58 90;
+  --bg: 14 20 24;
+  --bg-soft: 20 30 35;
+  --surface: 28 40 46;
+  --surface-2: 40 58 66;
   --accent: 103 223 255;
   --accent-dark: 71 175 212;
-  --primary: 236 247 255;
+  --primary: 214 240 255;
   --cta: 115 198 255;
-  --text-main: 245 246 251;
-  --text-soft: 176 191 221;
-  --text-mute: 128 147 183;
+  --text-main: 233 239 241;
+  --text-soft: 165 180 184;
+  --text-mute: 126 143 148;
 }
 
 *,
@@ -34,10 +34,7 @@ body {
   margin: 0;
   color: rgb(var(--text-main));
   font-family: "Sora", system-ui, sans-serif;
-  background:
-    radial-gradient(circle at 12% 10%, rgba(118, 155, 255, 0.14), transparent 36%),
-    radial-gradient(circle at 86% 84%, rgba(86, 201, 255, 0.1), transparent 38%),
-    linear-gradient(165deg, rgb(var(--bg)) 0%, rgb(var(--bg-soft)) 48%, rgb(var(--bg)) 100%);
+  background: rgb(var(--bg));
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -48,14 +45,42 @@ a {
 }
 
 ::selection {
-  background: rgba(245, 246, 251, 0.24);
-  color: rgb(var(--text-main));
+  background: rgba(139, 215, 255, 0.3);
+  color: rgb(19 30 35);
 }
 
 .film-grain {
-  background-image: radial-gradient(rgba(255, 255, 255, 0.04) 0.6px, transparent 0.6px);
+  background-image: radial-gradient(rgba(224, 236, 238, 0.035) 0.6px, transparent 0.6px);
   background-size: 3px 3px;
-  opacity: 0.06;
+  opacity: 0.07;
+}
+
+@layer base {
+  input,
+  textarea,
+  select {
+    background-color: rgb(var(--surface) / 0.72);
+    border-color: rgb(255 255 255 / 0.14);
+    color: rgb(var(--text-main));
+    backdrop-filter: blur(14px) saturate(130%);
+    -webkit-backdrop-filter: blur(14px) saturate(130%);
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: rgb(var(--text-soft) / 0.8);
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  textarea:-webkit-autofill:hover,
+  textarea:-webkit-autofill:focus {
+    -webkit-text-fill-color: rgb(var(--text-main));
+    box-shadow: 0 0 0px 1000px rgb(var(--surface) / 0.78) inset;
+    transition: background-color 9999s ease-in-out 0s;
+  }
 }
 
 * {
@@ -65,6 +90,18 @@ a {
 
 *::-webkit-scrollbar {
   display: none;
+}
+
+a,
+button,
+[role="button"] {
+  transition:
+    color 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .reveal-on-scroll {
@@ -79,6 +116,12 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  a,
+  button,
+  [role="button"] {
+    transition: none;
+  }
+
   .reveal-on-scroll {
     opacity: 1;
     transform: none;

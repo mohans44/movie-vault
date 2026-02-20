@@ -23,7 +23,7 @@ export function CastSection({ cast }) {
             <button
               key={actor.id}
               type="button"
-              onClick={() => navigate(`/person/${actor.id}?role=acting`)}
+              onClick={() => navigate(`/people/${actor.id}?role=acting`)}
               className="group w-[96px] min-w-[96px] snap-start text-center transition sm:w-[118px] sm:min-w-[118px] md:w-[184px] md:min-w-[184px] lg:w-[204px] lg:min-w-[204px]"
             >
               <img

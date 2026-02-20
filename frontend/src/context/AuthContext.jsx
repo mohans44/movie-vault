@@ -3,24 +3,71 @@ import { loginUser, signupUser, updateUserProfile } from "../utils/api";
 
 const AuthContext = createContext();
 
+function getTokenExpiryMs(token) {
+  try {
+    const payloadBase64 = token.split(".")[1];
+    if (!payloadBase64) return null;
+    const payloadJson = atob(payloadBase64.replace(/-/g, "+").replace(/_/g, "/"));
+    const payload = JSON.parse(payloadJson);
+    return typeof payload.exp === "number" ? payload.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+function isTokenExpired(token) {
+  const expiryMs = getTokenExpiryMs(token);
+  if (!expiryMs) return false;
+  return Date.now() >= expiryMs;
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const storedUser = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    return storedUser && token ? JSON.parse(storedUser) : null;
+    if (!storedUser || !token) return null;
+    if (isTokenExpired(token)) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      return null;
+    }
+    return JSON.parse(storedUser);
   });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     const token = localStorage.getItem("token");
-    if (storedUser && token && !user) {
+    if (storedUser && token && !isTokenExpired(token) && !user) {
       setUser(JSON.parse(storedUser));
     }
-    if ((!storedUser || !token) && user) {
+    if ((!storedUser || !token || isTokenExpired(token)) && user) {
       setUser(null);
     }
   }, [user]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return undefined;
+
+    const expiryMs = getTokenExpiryMs(token);
+    if (!expiryMs) return undefined;
+
+    const timeoutMs = Math.max(0, expiryMs - Date.now());
+    const timerId = setTimeout(() => {
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+      setUser(null);
+    }, timeoutMs);
+
+    return () => clearTimeout(timerId);
+  }, [user]);
+
+  useEffect(() => {
+    const onAuthExpired = () => setUser(null);
+    window.addEventListener("auth:expired", onAuthExpired);
+    return () => window.removeEventListener("auth:expired", onAuthExpired);
+  }, []);
 
   const login = async (userInput, password) => {
     setLoading(true);

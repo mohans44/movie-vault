@@ -70,7 +70,8 @@ export default function PersonDetails() {
   const [person, setPerson] = useState(null);
   const [credits, setCredits] = useState({ cast: [], crew: [] });
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState("rating");
+  const [bioExpanded, setBioExpanded] = useState(false);
 
   const requestedRole = searchParams.get("role") || "";
 
@@ -155,6 +156,9 @@ export default function PersonDetails() {
     }
   }, [groupedCredits, activeTab, sortBy]);
 
+  const biography = person?.biography?.trim() || "No biography available.";
+  const canExpandBio = biography.length > 320;
+
   if (loading) {
     return <LoadingSpinner message="Loading person details..." />;
   }
@@ -187,9 +191,24 @@ export default function PersonDetails() {
               alt={person.name}
               className="aspect-[2/3] w-[104px] flex-shrink-0 rounded-xl object-cover sm:w-[120px] lg:mx-auto lg:w-full lg:max-w-none lg:rounded-2xl"
             />
-            <p className="mt-0 text-[11px] leading-relaxed text-text-soft md:text-sm lg:mt-4">
-              {person.biography || "No biography available."}
-            </p>
+            <div className="min-w-0">
+              <p
+                className={`mt-0 text-[11px] leading-relaxed text-text-soft md:text-sm lg:mt-4 ${
+                  bioExpanded ? "" : "line-clamp-6"
+                }`}
+              >
+                {biography}
+              </p>
+              {canExpandBio && (
+                <button
+                  type="button"
+                  onClick={() => setBioExpanded((value) => !value)}
+                  className="mt-2 text-xs font-semibold text-sky-300 transition hover:text-sky-200"
+                >
+                  {bioExpanded ? "View less" : "View more"}
+                </button>
+              )}
+            </div>
           </aside>
 
           <section className="glass-panel overflow-hidden rounded-2xl md:rounded-3xl lg:max-h-[calc(100vh-6rem)] lg:overflow-y-auto">

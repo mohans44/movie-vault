@@ -24,6 +24,7 @@ export default function MovieDetails() {
     movie,
     recommendations,
     reviews,
+    tmdbReviews,
     watchlist,
     existingRating,
     watchProviders,
@@ -169,6 +170,7 @@ export default function MovieDetails() {
         />
         <ReviewsSection
           reviews={reviews}
+          tmdbReviews={tmdbReviews}
           loading={loadingReviews}
           user={user}
           onLogMovie={handleLogMovie}

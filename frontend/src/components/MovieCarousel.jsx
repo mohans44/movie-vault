@@ -137,15 +137,15 @@ export default function MovieCarousel({
   };
 
   return (
-    <section ref={sectionRef} className="reveal-on-scroll my-6 first:mt-2 md:my-12">
+    <section ref={sectionRef} className="reveal-on-scroll my-5 first:mt-2 md:my-12">
       {title && (
-        <div className="mb-3 flex items-center gap-2 px-1 md:mb-4 md:px-2">
+        <div className="mb-2.5 flex items-center gap-2 px-1 md:mb-4 md:px-2">
           {Icon && (
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary md:h-9 md:w-9 md:rounded-xl">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-primary/30 bg-primary/10 text-primary md:h-9 md:w-9 md:rounded-xl">
               <Icon size={16} />
             </span>
           )}
-          <h2 className="font-display text-lg font-bold tracking-tight text-text-main md:text-3xl">
+          <h2 className="font-display text-base font-bold tracking-tight text-text-main md:text-3xl">
             {title}
           </h2>
         </div>
@@ -184,7 +184,7 @@ export default function MovieCarousel({
           {moviesToRender.map((movie, index) => (
             <div
               key={movie.id}
-              className="w-[23vw] min-w-[23vw] max-w-[130px] flex-shrink-0 snap-start sm:w-[30vw] sm:min-w-[30vw] sm:max-w-[220px] md:w-[23vw] md:min-w-[23vw] lg:w-[18vw] lg:min-w-[18vw] xl:w-[15vw] xl:min-w-[15vw]"
+              className="w-[32vw] min-w-[32vw] max-w-[160px] flex-shrink-0 snap-start sm:w-[30vw] sm:min-w-[30vw] sm:max-w-[220px] md:w-[23vw] md:min-w-[23vw] lg:w-[18vw] lg:min-w-[18vw] xl:w-[15vw] xl:min-w-[15vw]"
             >
               <MovieCard movie={movie} prioritize={index < 4} />
             </div>
@@ -194,7 +194,7 @@ export default function MovieCarousel({
             Array.from({ length: SKELETON_COUNT }).map((_, index) => (
               <div
                 key={`skeleton-${index}`}
-                className="w-[23vw] min-w-[23vw] max-w-[130px] flex-shrink-0 snap-start sm:w-[30vw] sm:min-w-[30vw] sm:max-w-[220px] md:w-[23vw] md:min-w-[23vw] lg:w-[18vw] lg:min-w-[18vw] xl:w-[15vw] xl:min-w-[15vw]"
+                className="w-[32vw] min-w-[32vw] max-w-[160px] flex-shrink-0 snap-start sm:w-[30vw] sm:min-w-[30vw] sm:max-w-[220px] md:w-[23vw] md:min-w-[23vw] lg:w-[18vw] lg:min-w-[18vw] xl:w-[15vw] xl:min-w-[15vw]"
               >
                 <SkeletonCard />
               </div>

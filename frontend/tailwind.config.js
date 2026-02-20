@@ -24,7 +24,7 @@ export default {
       },
       boxShadow: {
         card: "0 22px 40px -26px rgba(5, 8, 20, 0.92)",
-        glow: "0 0 0 1px rgba(120,168,255,0.32), 0 18px 44px -24px rgba(143,190,255,0.36)",
+        glow: "0 0 0 1px rgba(120,198,255,0.28), 0 18px 44px -24px rgba(0,0,0,0.44)",
         soft: "0 10px 26px -18px rgba(0, 0, 0, 0.65)",
       },
       animation: {
@@ -64,21 +64,21 @@ export default {
       addUtilities({
         ".glass-panel": {
           background:
-            "linear-gradient(130deg, rgba(58, 63, 85, 0.34), rgba(32, 35, 49, 0.18), rgba(20, 22, 34, 0.14))",
+            "linear-gradient(140deg, rgba(31, 43, 49, 0.72), rgba(26, 37, 43, 0.64), rgba(21, 31, 36, 0.62))",
           backdropFilter: "blur(26px) saturate(155%)",
           WebkitBackdropFilter: "blur(26px) saturate(155%)",
-          border: "1px solid rgba(233, 238, 252, 0.18)",
+          border: "1px solid rgba(214, 230, 228, 0.14)",
           boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.22), inset 0 -1px 0 rgba(255,255,255,0.05), 0 26px 60px -32px rgba(0,0,0,0.85)",
+            "inset 0 1px 0 rgba(234,246,245,0.08), 0 20px 46px -30px rgba(0,0,0,0.85)",
         },
         ".glass-pill": {
           background:
-            "linear-gradient(128deg, rgba(58, 63, 85, 0.34), rgba(32, 35, 49, 0.16), rgba(20, 22, 34, 0.1))",
+            "linear-gradient(140deg, rgba(31, 43, 49, 0.8), rgba(24, 35, 40, 0.74), rgba(19, 29, 34, 0.7))",
           backdropFilter: "blur(30px) saturate(160%)",
           WebkitBackdropFilter: "blur(30px) saturate(160%)",
-          border: "1px solid rgba(233, 238, 252, 0.2)",
+          border: "1px solid rgba(214, 230, 228, 0.14)",
           boxShadow:
-            "inset 0 1px 0 rgba(255,255,255,0.24), inset 0 -1px 0 rgba(255,255,255,0.05), 0 20px 48px -30px rgba(0,0,0,0.9)",
+            "inset 0 1px 0 rgba(234,246,245,0.07), 0 20px 48px -30px rgba(0,0,0,0.9)",
         },
         ".cinematic-grid": {
           backgroundImage:

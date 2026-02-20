@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
-import { Play, X, Check, Trash2, Calendar, Sparkles } from "lucide-react";
+import { Play, X, Check, Trash2, Calendar, Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
 import StarRating from "./StarRating";
 import InteractiveStarRating from "./InteractiveStarRating";
 import { addRating, editRating, deleteRating } from "../utils/api";
@@ -23,6 +23,27 @@ function getYesterday() {
   return date.toISOString().split("T")[0];
 }
 
+const WEEK_DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+function parseYmd(value) {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const parsed = new Date(year, month - 1, day, 12, 0, 0);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function toYmd(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function monthLabel(date) {
+  return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+}
+
 export default function LogMovieModal({
   movie,
   isOpen,
@@ -36,20 +57,36 @@ export default function LogMovieModal({
   const [watchedDate, setWatchedDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const isEditing = !!existingRating;
   const communityRating = Math.max(
     0,
     Math.min(5, Number(movie?.rating || movie?.vote_average || 0) / 2)
   );
+  const posterSrc = movie?.poster_path || "/no-image.svg";
+  const posterSrcSet = movie?.poster_path_raw
+    ? [
+        `https://image.tmdb.org/t/p/w185${movie.poster_path_raw} 185w`,
+        `https://image.tmdb.org/t/p/w342${movie.poster_path_raw} 342w`,
+        `https://image.tmdb.org/t/p/w500${movie.poster_path_raw} 500w`,
+      ].join(", ")
+    : undefined;
 
   useEffect(() => {
-    setRating(existingRating?.rating || 0);
-    setReview(existingRating?.review || "");
-    setWatchedDate(
+    const initialWatchedDate =
       existingRating?.watched_date
         ? formatDate(existingRating.watched_date)
-        : getToday()
-    );
+        : getToday();
+    setRating(existingRating?.rating || 0);
+    setReview(existingRating?.review || "");
+    setWatchedDate(initialWatchedDate);
+    const baseDate = parseYmd(initialWatchedDate) || new Date();
+    setCalendarMonth(new Date(baseDate.getFullYear(), baseDate.getMonth(), 1));
+    setCalendarOpen(false);
     setError("");
   }, [existingRating, isOpen, movie?.id]);
 
@@ -110,13 +147,41 @@ export default function LogMovieModal({
     }
   };
 
+  const selectedDate = parseYmd(watchedDate);
+
+  const calendarCells = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstOfMonth = new Date(year, month, 1);
+    const mondayIndexedStart = (firstOfMonth.getDay() + 6) % 7;
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const cells = [];
+    for (let i = 0; i < mondayIndexedStart; i += 1) {
+      cells.push({ key: `pad-start-${i}`, inMonth: false, day: null, value: null });
+    }
+    for (let day = 1; day <= daysInMonth; day += 1) {
+      const value = toYmd(new Date(year, month, day));
+      cells.push({ key: value, inMonth: true, day, value });
+    }
+    while (cells.length % 7 !== 0) {
+      cells.push({
+        key: `pad-end-${cells.length}`,
+        inMonth: false,
+        day: null,
+        value: null,
+      });
+    }
+    return cells;
+  }, [calendarMonth]);
+
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black/70 backdrop-blur-sm">
-      <div className="flex min-h-full items-center justify-center p-4 md:items-start md:p-6 md:pt-24">
-      <div className="glass-panel w-full max-w-xl max-h-[92vh] overflow-hidden rounded-3xl shadow-card">
-        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 md:px-6">
+      <div className="flex min-h-full items-center justify-center p-2.5 md:items-start md:p-6 md:pt-24">
+      <div className="glass-panel w-full max-w-[94vw] max-h-[88vh] overflow-hidden rounded-2xl shadow-card md:max-w-xl md:max-h-[92vh] md:rounded-3xl">
+        <div className="flex items-center justify-between border-b border-white/10 px-4 py-3.5 md:px-6 md:py-4">
           <h2 className="flex items-center gap-2 text-xl font-bold text-text-main">
             <Play size={18} className="text-accent" />
             {isEditing ? "Edit your log" : "Log this movie"}
@@ -130,18 +195,23 @@ export default function LogMovieModal({
           </button>
         </div>
 
-        <div className="border-b border-white/10 px-5 py-4 md:px-6">
-          <div className="flex gap-4 rounded-2xl border border-white/10 bg-background/30 p-3">
+        <div className="border-b border-white/10 px-4 py-3.5 md:px-6 md:py-4">
+          <div className="flex gap-3 rounded-2xl border border-white/10 bg-background/30 p-2.5 md:gap-4 md:p-3">
             <img
-              src={movie.poster_path || "/no-image.svg"}
+              src={posterSrc}
+              srcSet={posterSrcSet}
+              sizes="64px"
               alt={movie.title}
-              className="h-24 w-16 rounded-lg object-cover"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              className="h-20 w-14 rounded-lg object-cover md:h-24 md:w-16"
             />
             <div className="min-w-0 flex-1">
-              <h3 className="line-clamp-2 text-base font-semibold text-text-main md:text-lg">
+              <h3 className="line-clamp-2 text-sm font-semibold text-text-main md:text-lg">
                 {movie.title}
               </h3>
-              <p className="mt-1 text-sm text-text-soft">
+              <p className="mt-1 text-xs text-text-soft md:text-sm">
                 {movie.release_date?.slice(0, 4) || "Unknown"}
                 {movie.director ? ` • ${movie.director}` : ""}
               </p>
@@ -157,9 +227,9 @@ export default function LogMovieModal({
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="max-h-[62vh] overflow-y-auto px-5 py-5 md:px-6">
+        <form onSubmit={handleSubmit} className="max-h-[54vh] overflow-y-auto px-4 py-4 md:max-h-[62vh] md:px-6 md:py-5">
           <div className="space-y-5">
-            <section className="rounded-2xl border border-white/10 bg-background/25 p-4">
+            <section className="rounded-2xl border border-white/10 bg-background/25 p-3 md:p-4">
               <label className="mb-2 block text-sm font-semibold text-text-main">
                 Your rating <span className="text-red-300">*</span>
               </label>
@@ -167,7 +237,7 @@ export default function LogMovieModal({
                 <InteractiveStarRating
                   rating={rating}
                   onRatingChange={setRating}
-                  size={34}
+                  size={30}
                 />
               </div>
               <p className="mt-2 text-center text-sm text-text-soft">
@@ -175,41 +245,62 @@ export default function LogMovieModal({
               </p>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-background/25 p-4">
+            <section className="rounded-2xl border border-white/10 bg-background/25 p-3 md:p-4">
               <label className="mb-2 block text-sm font-semibold text-text-main">
                 Watched date
               </label>
               <div className="mb-3 flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => setWatchedDate(getToday())}
+                  onClick={() => {
+                    const today = getToday();
+                    setWatchedDate(today);
+                    const parsed = parseYmd(today);
+                    if (parsed) {
+                      setCalendarMonth(new Date(parsed.getFullYear(), parsed.getMonth(), 1));
+                    }
+                  }}
                   className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-text-main hover:bg-white/10"
                 >
                   Today
                 </button>
                 <button
                   type="button"
-                  onClick={() => setWatchedDate(getYesterday())}
+                  onClick={() => {
+                    const yesterday = getYesterday();
+                    setWatchedDate(yesterday);
+                    const parsed = parseYmd(yesterday);
+                    if (parsed) {
+                      setCalendarMonth(new Date(parsed.getFullYear(), parsed.getMonth(), 1));
+                    }
+                  }}
                   className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-medium text-text-main hover:bg-white/10"
                 >
                   Yesterday
                 </button>
               </div>
-              <div className="relative">
+              <div className="relative space-y-2">
                 <Calendar
                   size={15}
                   className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-text-soft"
                 />
-                <input
-                  type="date"
-                  value={watchedDate}
-                  onChange={(event) => setWatchedDate(event.target.value)}
-                  className="w-full rounded-xl border border-white/15 bg-background/35 py-2.5 pl-9 pr-3 text-sm text-text-main outline-none focus:border-primary/60"
-                />
+                <button
+                  type="button"
+                  onClick={() => setCalendarOpen((prev) => !prev)}
+                  className="w-full rounded-xl border border-white/15 bg-background/35 py-2.5 pl-9 pr-3 text-left text-sm text-text-main outline-none transition hover:bg-white/5"
+                >
+                  {selectedDate
+                    ? selectedDate.toLocaleDateString(undefined, {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "Select watched date"}
+                </button>
               </div>
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-background/25 p-4">
+            <section className="rounded-2xl border border-white/10 bg-background/25 p-3 md:p-4">
               <label className="mb-2 block text-sm font-semibold text-text-main">
                 Review (optional)
               </label>
@@ -267,6 +358,94 @@ export default function LogMovieModal({
         </form>
       </div>
       </div>
+      {calendarOpen && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/55 backdrop-blur-sm"
+          onClick={() => setCalendarOpen(false)}
+        >
+          <div
+            className="w-[min(92vw,360px)] rounded-2xl border border-white/15 bg-surface/90 p-3.5 shadow-card backdrop-blur-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-2 flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() =>
+                  setCalendarMonth(
+                    (prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1)
+                  )
+                }
+                className="rounded-md border border-white/15 bg-white/5 p-1.5 text-text-soft hover:bg-white/10 hover:text-text-main"
+                aria-label="Previous month"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <p className="text-sm font-semibold text-text-main">
+                {monthLabel(calendarMonth)}
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setCalendarMonth(
+                    (prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1)
+                  )
+                }
+                className="rounded-md border border-white/15 bg-white/5 p-1.5 text-text-soft hover:bg-white/10 hover:text-text-main"
+                aria-label="Next month"
+              >
+                <ChevronRight size={14} />
+              </button>
+            </div>
+
+            <div className="mb-1 grid grid-cols-7 gap-1">
+              {WEEK_DAYS.map((day) => (
+                <span
+                  key={day}
+                  className="text-center text-[10px] font-semibold uppercase tracking-wide text-text-soft"
+                >
+                  {day}
+                </span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+              {calendarCells.map((cell) => {
+                if (!cell.inMonth) {
+                  return <span key={cell.key} className="h-8" />;
+                }
+                const isSelected = cell.value === watchedDate;
+                return (
+                  <button
+                    key={cell.key}
+                    type="button"
+                    onClick={() => {
+                      setWatchedDate(cell.value);
+                      setCalendarOpen(false);
+                    }}
+                    className={`h-8 rounded-md text-xs font-medium transition ${
+                      isSelected
+                        ? "border border-primary/50 bg-primary/20 text-primary"
+                        : "border border-white/10 bg-white/5 text-text-main hover:bg-white/10"
+                    }`}
+                  >
+                    {cell.day}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="mt-3 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCalendarOpen(false)}
+                className="rounded-md border border-white/15 bg-white/5 px-3 py-1.5 text-xs font-semibold text-text-soft hover:bg-white/10 hover:text-text-main"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

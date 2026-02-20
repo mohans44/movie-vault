@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getLoggedMovies, getWatchlist, fetchMovieDetails } from "../utils/api";
 import MovieCarousel from "../components/MovieCarousel";
 import EditProfileModal from "../components/EditProfileModal";
-import { Popcorn, Ticket, UserCircle, Clapperboard, CalendarDays, UserPen } from "lucide-react";
+import { Popcorn, Ticket, UserCircle, Clapperboard, CalendarDays, UserPen, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const useResponsiveSlice = () => {
@@ -72,7 +72,7 @@ const Section = ({
 );
 
 export default function Profile() {
-  const { user, updateProfile } = useAuth();
+  const { user, updateProfile, logout } = useAuth();
   const [watched, setWatched] = useState([]);
   const [watchlist, setWatchlist] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -175,6 +175,17 @@ export default function Profile() {
                 <UserPen size={13} />
                 Edit Profile
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  logout();
+                  navigate("/login");
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-red-400/35 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-200 transition hover:bg-red-500/20"
+              >
+                <LogOut size={13} />
+                Logout
+              </button>
               <div className="items-center rounded-xl border border-white/10 bg-surface/50 px-3 py-2 text-xs text-text-soft md:flex hidden">
                 <Clapperboard size={14} className="mr-2 text-text-main" />
                 Ratings improve recommendations
@@ -189,6 +200,17 @@ export default function Profile() {
           >
             <UserPen size={13} />
             Edit Profile
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              logout();
+              navigate("/login");
+            }}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-red-400/35 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-200 sm:hidden"
+          >
+            <LogOut size={13} />
+            Logout
           </button>
 
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -209,7 +231,7 @@ export default function Profile() {
           loading={loading}
           movies={watched}
           sliceCount={sliceCount}
-          onViewAll={() => navigate("/watched-movies")}
+          onViewAll={() => navigate("/account/watched")}
           forceViewAll={true}
         />
 
@@ -221,7 +243,7 @@ export default function Profile() {
           loading={loading}
           movies={watchlist}
           sliceCount={sliceCount}
-          onViewAll={() => navigate("/watchlist")}
+          onViewAll={() => navigate("/account/watchlist")}
         />
 
         <div className="sm:hidden rounded-xl border border-white/10 bg-surface/40 px-3 py-2.5 text-[11px] text-text-soft">

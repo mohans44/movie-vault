@@ -32,7 +32,7 @@ export function CrewSection({ crew }) {
             <button
               key={`${person.id}-${person.role}`}
               type="button"
-              onClick={() => navigate(`/person/${person.id}?role=${mapRoleToQuery(person.role)}`)}
+              onClick={() => navigate(`/people/${person.id}?role=${mapRoleToQuery(person.role)}`)}
               className="group w-[96px] min-w-[96px] snap-start text-center transition sm:w-[124px] sm:min-w-[124px] md:w-[196px] md:min-w-[196px] lg:w-[220px] lg:min-w-[220px]"
             >
               <img
@@ -41,10 +41,10 @@ export function CrewSection({ crew }) {
                 className="mx-auto h-12 w-12 rounded-full object-cover ring-1 ring-white/15 md:h-24 md:w-24 lg:h-28 lg:w-28"
                 loading="lazy"
               />
-              <p className="mt-1 line-clamp-2 text-[10px] font-semibold text-text-main group-hover:text-white md:text-sm">
+              <p className="mt-1 hidden line-clamp-2 text-[10px] font-semibold text-text-main group-hover:text-white md:block md:text-sm">
                 {person.role}
               </p>
-              <p className="line-clamp-2 text-[10px] text-text-soft md:text-xs">{person.name}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-text-soft md:mt-0 md:text-xs">{person.name}</p>
             </button>
           ))}
         </div>

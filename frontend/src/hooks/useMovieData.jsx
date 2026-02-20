@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
   fetchMovieDetails,
   getMovieRecommendations,
+  getMovieTmdbReviews,
   getMovieWatchProviders,
   getLoggedMovies,
   getWatchlist,
@@ -12,6 +13,7 @@ export function useMovieData(id, user) {
   const [movie, setMovie] = useState(null);
   const [recommendations, setRecommendations] = useState([]);
   const [reviews, setReviews] = useState([]);
+  const [tmdbReviews, setTmdbReviews] = useState([]);
   const [loggedMovies, setLoggedMovies] = useState([]);
   const [watchlist, setWatchlist] = useState([]);
   const [existingRating, setExistingRating] = useState(null);
@@ -62,14 +64,35 @@ export function useMovieData(id, user) {
 
   useEffect(() => {
     setReviews([]);
+    setTmdbReviews([]);
     setExistingRating(null);
     if (movie?.id) {
       setLoadingReviews(true);
-      getRatings(movie.id)
-        .then((data) => {
-          setReviews(Array.isArray(data) ? data : []);
+      Promise.all([getRatings(movie.id), getMovieTmdbReviews(movie.id)])
+        .then(([ratingsData, tmdbData]) => {
+          const normalizedRatings = Array.isArray(ratingsData) ? ratingsData : [];
+          const normalizedTmdb = Array.isArray(tmdbData)
+            ? tmdbData.map((review) => ({
+                id: review.id,
+                username:
+                  review.author_details?.username ||
+                  review.author ||
+                  "TMDB User",
+                review: review.content || "",
+                rating:
+                  typeof review.author_details?.rating === "number"
+                    ? review.author_details.rating / 2
+                    : null,
+                created_at: review.created_at,
+                source: "tmdb",
+                url: review.url || null,
+              }))
+            : [];
+
+          setReviews(normalizedRatings);
+          setTmdbReviews(normalizedTmdb);
           setExistingRating(
-            (data || []).find((r) => r.username === user?.username) || null
+            normalizedRatings.find((r) => r.username === user?.username) || null
           );
         })
         .finally(() => setLoadingReviews(false));
@@ -108,6 +131,7 @@ export function useMovieData(id, user) {
     movie,
     recommendations,
     reviews,
+    tmdbReviews,
     loggedMovies,
     watchlist,
     existingRating,

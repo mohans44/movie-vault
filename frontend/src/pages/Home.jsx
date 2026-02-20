@@ -68,20 +68,31 @@ function WelcomeHeader({ user }) {
           : "Late Night Picks";
 
   return (
-    <header className="glass-panel mb-6 rounded-3xl border border-white/15 p-4 md:mb-8 md:p-6">
-      <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
+    <header className="glass-panel mb-4 rounded-3xl border border-white/12 p-3.5 md:mb-7 md:p-5">
+      <p className="mb-2 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-primary">
         <Sparkles size={12} />
         {timeLabel}
       </p>
 
-      <h1 className="font-display text-xl font-bold leading-tight text-text-main md:text-4xl">
+      <h1 className="font-display text-2xl font-bold leading-tight text-text-main md:text-4xl">
         {user ? `${greeting}, ${displayName}` : "Find your next favorite film"}
       </h1>
 
-      <p className="mt-2 text-xs text-text-soft md:text-sm">
-        Explore global trends, regional picks, and personal recommendations.
+      <p className="mt-2 max-w-2xl text-sm text-text-soft md:text-sm">
+        Explore global trends, regional picks, and recommendation rails shaped by what you log.
       </p>
 
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-text-soft">
+          Curated Discovery
+        </span>
+        <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-text-soft">
+          Fresh Releases
+        </span>
+        <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-text-soft">
+          Personalized Picks
+        </span>
+      </div>
     </header>
   );
 }
@@ -106,7 +117,7 @@ export default function Home() {
   );
 
   return (
-    <div className="min-h-screen px-3 pb-10 pt-4 sm:px-6 md:pt-5">
+    <div className="min-h-screen px-2.5 pb-10 pt-4 sm:px-6 md:pt-5">
       <main className="relative z-10 mx-auto w-full max-w-7xl">
         <WelcomeHeader user={user} />
 

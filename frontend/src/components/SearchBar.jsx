@@ -10,7 +10,7 @@ export default function SearchBar({ compact = false }) {
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!query.trim()) return;
-    navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    navigate(`/discover/search?q=${encodeURIComponent(query.trim())}`);
     setQuery("");
   };
 
@@ -52,4 +52,3 @@ export default function SearchBar({ compact = false }) {
     </div>
   );
 }
-
