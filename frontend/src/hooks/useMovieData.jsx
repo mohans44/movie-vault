@@ -66,9 +66,9 @@ export function useMovieData(id, user) {
     setReviews([]);
     setTmdbReviews([]);
     setExistingRating(null);
-    if (movie?.id) {
+    if (id) {
       setLoadingReviews(true);
-      Promise.all([getRatings(movie.id), getMovieTmdbReviews(movie.id)])
+      Promise.all([getRatings(id), getMovieTmdbReviews(id)])
         .then(([ratingsData, tmdbData]) => {
           const normalizedRatings = Array.isArray(ratingsData) ? ratingsData : [];
           const normalizedTmdb = Array.isArray(tmdbData)
@@ -99,7 +99,7 @@ export function useMovieData(id, user) {
     } else {
       setLoadingReviews(false);
     }
-  }, [movie, user?.username]);
+  }, [id, user?.username]);
 
   useEffect(() => {
     if (user?.username) {
@@ -111,12 +111,32 @@ export function useMovieData(id, user) {
   }, [user?.username, id]);
 
   const refreshUserLogAndReviews = () => {
-    if (movie?.id) {
-      getRatings(movie.id).then((data) => {
+    if (id) {
+      getRatings(id).then((data) => {
         setReviews(Array.isArray(data) ? data : []);
         setExistingRating(
           (data || []).find((r) => r.username === user?.username) || null
         );
+      });
+      getMovieTmdbReviews(id).then((tmdbData) => {
+        const normalizedTmdb = Array.isArray(tmdbData)
+          ? tmdbData.map((review) => ({
+              id: review.id,
+              username:
+                review.author_details?.username ||
+                review.author ||
+                "TMDB User",
+              review: review.content || "",
+              rating:
+                typeof review.author_details?.rating === "number"
+                  ? review.author_details.rating / 2
+                  : null,
+              created_at: review.created_at,
+              source: "tmdb",
+              url: review.url || null,
+            }))
+          : [];
+        setTmdbReviews(normalizedTmdb);
       });
     }
     if (user?.username) {

@@ -455,15 +455,58 @@ export const getMovieTmdbReviews = async (movieId, page = 1) => {
     return withCache(
       `movie:tmdb:reviews:${movieId}:page:${page}`,
       async () => {
-        const response = await axios.get(
+        let response = await axios.get(
           `${BASE_URL}/api/movies/proxy/tmdb/movie/${movieId}/reviews`,
           {
-            params: { language: "en-US", page },
+            params: { page },
             headers: getAuthHeaders(),
           },
         );
+        let firstPageResults = response.data?.results || [];
+        const currentPage = Number(response.data?.page || page);
+        const totalPages = Number(response.data?.total_pages || currentPage);
 
-        return response.data?.results || [];
+        // Fallback for stricter TMDB locale behavior in some titles.
+        if (firstPageResults.length === 0 && page === 1) {
+          response = await axios.get(
+            `${BASE_URL}/api/movies/proxy/tmdb/movie/${movieId}/reviews`,
+            {
+              params: { language: "en-US", page },
+              headers: getAuthHeaders(),
+            },
+          );
+          firstPageResults = response.data?.results || [];
+        }
+
+        // Pull up to 3 pages total for richer review coverage without adding too much latency.
+        if (currentPage !== 1 || totalPages <= 1) {
+          return firstPageResults;
+        }
+
+        const pagesToFetch = [2, 3].filter((pageNum) => pageNum <= totalPages);
+        if (pagesToFetch.length === 0) return firstPageResults;
+
+        const extraResponses = await Promise.all(
+          pagesToFetch.map((pageNum) =>
+            axios.get(`${BASE_URL}/api/movies/proxy/tmdb/movie/${movieId}/reviews`, {
+              params: { page: pageNum },
+              headers: getAuthHeaders(),
+            }),
+          ),
+        );
+
+        const merged = [
+          ...firstPageResults,
+          ...extraResponses.flatMap((res) => res.data?.results || []),
+        ];
+
+        const seen = new Set();
+        return merged.filter((review) => {
+          const key = review?.id || review?.url || `${review?.author}-${review?.created_at}`;
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
       },
       CACHE_TTL.short,
     );

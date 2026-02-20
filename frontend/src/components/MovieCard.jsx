@@ -14,6 +14,7 @@ export default function MovieCard({ movie, prioritize = false }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [shouldLoadImage, setShouldLoadImage] = useState(Boolean(prioritize));
   const cardRef = useRef(null);
+  const imgRef = useRef(null);
   const posterPath = movie.poster_path;
   const hasFullPosterUrl = typeof posterPath === "string" && posterPath.startsWith("http");
   const posterSrc = hasFullPosterUrl
@@ -65,6 +66,13 @@ export default function MovieCard({ movie, prioritize = false }) {
     setImageLoaded(false);
   }, [movie.id, movie.poster_path]);
 
+  useEffect(() => {
+    if (!shouldLoadImage) return;
+    if (imgRef.current?.complete) {
+      setImageLoaded(true);
+    }
+  }, [shouldLoadImage, posterSrc]);
+
   return (
     <div
       ref={cardRef}
@@ -81,6 +89,7 @@ export default function MovieCard({ movie, prioritize = false }) {
     >
       {shouldLoadImage && (
         <img
+          ref={imgRef}
           src={posterSrc}
           srcSet={posterSrcSet}
           sizes="(max-width: 640px) 160px, (max-width: 768px) 220px, (max-width: 1024px) 23vw, (max-width: 1280px) 18vw, 15vw"
@@ -89,6 +98,12 @@ export default function MovieCard({ movie, prioritize = false }) {
           fetchPriority={prioritize ? "high" : "auto"}
           decoding="async"
           onLoad={() => setImageLoaded(true)}
+          onError={(event) => {
+            setImageLoaded(true);
+            if (event.currentTarget.src.endsWith("/no-image.svg")) return;
+            event.currentTarget.src = "/no-image.svg";
+            event.currentTarget.srcset = "";
+          }}
           className={`h-full w-full aspect-[2/3] object-cover transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-105 ${
             imageLoaded ? "opacity-100" : "opacity-0"
           }`}
